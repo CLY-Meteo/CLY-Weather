@@ -59,3 +59,7 @@ temp/*
 
 # cly-meteo-sorting
 cly-meteo-sorting
+
+# MacOS
+.DS_Store
+

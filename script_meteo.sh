@@ -207,9 +207,9 @@ fi
 # ------------------------------------------------------------------------------------------
 # We get the file in the path and copy it to the work location. After creating it, if necessary.
 # Depending on the distro, this could be in the RAM and take a lot of memory. Thus, IT IS IMPORTANT TO CLEAN WHEN WE'RE DONE.
-mkdir $WorkPath -p
+mkdir -p $WorkPath
 echo "Hold on..."
-cp "$FilePath" "${WorkPath}data.csv" -f
+cp -f "$FilePath" "${WorkPath}data.csv"
 
 # We cut the first line in the csv, we don't need it.
 
