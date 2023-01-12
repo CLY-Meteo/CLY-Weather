@@ -53,3 +53,9 @@ dkms.conf
 
 # Samples
 *.csv
+
+# Work folder
+temp/*
+
+# cly-meteo-sorting
+cly-meteo-sorting
