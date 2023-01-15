@@ -1,6 +1,6 @@
 
 CC=gcc
-EXECUTABLE_NAME=cly-meteo-sorting
+EXECUTABlibLE_NAME=cly-meteo-sorting
 
 # Optional (use root if empty)
 BUILD_FOLDER=
@@ -10,21 +10,21 @@ release : all clean
 run_release : release run
 
 # Compilation
-avl.o :
-	@$(CC) -c avl.c -o $(BUILD_FOLDER)avl.o
+avllib.o :
+	@$(CC) -c avllib.c -o $(BUILD_FOLDER)avllib.o
 
-avr.o :
-	@$(CC) -c avr.c -o $(BUILD_FOLDER)avr.o
+abrlib.o :
+	@$(CC) -c abrlib.c -o $(BUILD_FOLDER)abrlib.o
 
-tab.o :
-	@$(CC) -c tab.c -o $(BUILD_FOLDER)tab.o
+tablib.o :
+	@$(CC) -c tablib.c -o $(BUILD_FOLDER)tablib.o
 
 main.o :
 	@$(CC) -c main.c -o $(BUILD_FOLDER)main.o
 
 # Everything at once
-all : avl.o avr.o tab.o main.o
-	@$(CC) $(BUILD_FOLDER)avl.o $(BUILD_FOLDER)avr.o $(BUILD_FOLDER)tab.o $(BUILD_FOLDER)main.o -o $(EXECUTABLE_NAME)
+all : avllib.o abrlib.o tablib.o main.o
+	@$(CC) $(BUILD_FOLDER)avllib.o $(BUILD_FOLDER)abrlib.o $(BUILD_FOLDER)tablib.o $(BUILD_FOLDER)main.o -o $(EXECUTABlibLE_NAME)
 
 # Cleaner
 clean :
@@ -32,5 +32,5 @@ clean :
 
 # Runners
 run : all
-	@echo "Running $(EXECUTABLE_NAME)"
-	@./$(EXECUTABLE_NAME)
+	@echo "Running $(EXECUTABlibLE_NAME)"
+	@./$(EXECUTABlibLE_NAME)

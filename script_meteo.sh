@@ -6,7 +6,6 @@ declare -r WorkPath="/tmp/cly-meteo/"
 
 # SHOULD BE OFF ON RELEASE
 declare -r DisableCleaning=true
-declare -r UseOldLocationFilter=true
 declare -r AlwaysRebuild=true
 
 # ------------ Constants ------------
@@ -28,9 +27,8 @@ IsFileArgumentSpecified=false
 AssumeNextCanBePath=false
 IsOneDataArgumentSpecified=false
 IsDateArgumentSpecified=false
-IsOneDataArgumentSpecified=false
-LocationArgument=""
-SortArgument=""
+UsedLocationArgument=""
+UsedSortArgument=""
 ShouldNextArgumentBeFilePath=false
 ShouldNextArgumentBeDate=0
 FilePath=""
@@ -39,8 +37,9 @@ MaxDate=""
 
 # -------------------------------------------------------------------------------------------
 # This part of the code detects if the arguments entered by the user are valid.
+
 for argument in $arguments
-do
+do	
 	if [[ "$ShouldNextArgumentBeFilePath" = true ]]; then
 		FilePath=$argument
 		ShouldNextArgumentBeFilePath=false
@@ -120,11 +119,11 @@ do
 	for location_argument in "${location_arguments[@]}"
 	do
 		if [[ " ${location_argument} " == " ${argument} " ]]; then
-			if [[ ! "$IsOneLocationArgumentSpecified" = "" ]]; then
+			if [[ ! "$UsedLocationArgument" = "" ]]; then
 				echo "Only one location argument can be specified."
 				exit 1
 			fi
-			LocationArgument=$argument
+			UsedLocationArgument=$argument
 			continue
 		fi
 	done
@@ -133,14 +132,20 @@ do
 	for sort_argument in "${sort_arguments[@]}"
 	do
 		if [[ " ${sort_argument} " == " ${argument} " ]]; then
-			if [[ ! "$SortArgument" = "" ]]; then
+			if [[ ! "$UsedSortArgument" = "" ]]; then
 				echo "Only one sorting method can be specified."
 				exit 1
 			fi
-			SortArgument=$argument
+			UsedSortArgument=$argument
 			continue
 		fi
 	done
+
+	# Did the user use the --help argument ?
+	if [[ " ${help_argument} " == " ${argument} " ]]; then
+		source "$ScriptDirectory/help.sh"
+		exit 0
+	fi
 done
 
 # Post-argument checks
@@ -202,7 +207,17 @@ if [[ ! -f "$ScriptDirectory/cly-meteo-sorting" ]]; then
 	cd "$backup_pwd"
 fi
 
-# [IMPLEMENT CHECKS THAT THE FILE SPECIFIED IS USABLE (exists, can be opened, is formatted properly, etc...)]
+if [[ ! $(type -P gnuplot) ]]; then
+	echo "gnuplot is not installed. Can't proceed."
+	exit 4
+fi
+
+# -------------------------------------- File Checks --------------------------------------
+if ! [ -e $FilePath -a -r $FilePath ]; then
+	echo "The file $FilePath does not exist or is not readable."
+	exit 1
+fi
+
 
 # ------------------------------------------------------------------------------------------
 # We get the file in the path and copy it to the work location. After creating it, if necessary.
@@ -211,69 +226,60 @@ mkdir -p $WorkPath
 echo "Hold on..."
 cp -f "$FilePath" "${WorkPath}data.csv"
 
-# We cut the first line in the csv, we don't need it.
-
-
 # --------------------------------------- LOCATION FILTERING --------------------------------
-# [WARNING] EXCLUDES LOCATIONS THAT DON'T HAVE A POSTAL CODE.
-if [[ ! "$LocationArgument" = "" ]]; then
-	if [[ $UseOldLocationFilter = false ]]; then
-		echo "Placeholder"
-		exit 1
-	else
-		case $LocationArgument in
-			"-F")
-			#France Métropolitaine + Corse
-			declare -r LocationList="07"
-			;;
+# I'll have to remember to check if the coordinates are correct.
+# Something was off with the file though. It didn't have the empty IDs.
 
-			"-G")
-			# Guyane Française
-			declare -r LocationList="81"
-			;;
+if [[ ! "$UsedLocationArgument" = "" ]]; then
+	echo "Filtering locations..."
+	
+	case $UsedLocationArgument in
+		"-F")
+		#France Métropolitaine + Corse
+		MinLat=41 ; MaxLat=51 ; MinLong=-6 ; MaxLong=10
+		;;
 
-			"-S")
-			# Saint-Pierre et Miquelon
-			declare -r LocationList="71"
-			;;
+		"-G")
+		# Guyane Française
+		MinLat=-3 ; MaxLat=5 ; MinLong=-54 ; MaxLong=-51
+		;;
 
-			"-A")
-			# Antilles
-			declare -r LocationList="78"
-			;;
+		"-S")
+		# Saint-Pierre et Miquelon
+		MinLat=46 ; MaxLat=47 ; MinLong=-56 ; MaxLong=-55
+		;;
 
-			"-O")
-			# Océan Indien
-			declare -r LocationList="67|61"
-			;;
+		"-A")
+		# Antilles
+		MinLat=15 ; MaxLat=25 ; MinLong=-89 ; MaxLong=-60
+		;;
 
-			"-Q")
-			# Antarctique
-			declare -r LocationList="89"
-			;;
+		"-O")
+		# Océan Indien
+		MinLat=-50 ; MaxLat=40 ; MinLong=20 ; MaxLong=180
+		;;
 
-			"*")
-			echo "This shouldn't be happening. Dropping info that could be useful for debugging :"
-			echo "Value of LocationArgument : ${LocationArgument}"
-			exit 1
-			;;
-		esac
+		"-Q")
+		# Antarctique
+		MinLat=-90 ; MaxLat=-60 ; MinLong=-180 ; MaxLong=180
+		;;
 
-		# We overwrite the temporary file.
-		echo "Filtering locations..."
-		grep -E "^(${LocationList})" "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
+		"*")
+		echo "This shouldn't be happening. Dropping info that could be useful for debugging :"
+		echo "Value of UsedLocationArgument : ${UsedLocationArgument}"
+		exit 4 # You'd think this would be a user error, so a 1, but there's tests that should prevent this from happening. So, it's a bug.
+		;;
+	esac
+	awk -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat) && (a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
 
-		rm "${WorkPath}data.csv"
-		mv "${WorkPath}filtered_data.csv" "${WorkPath}data.csv"
-	fi
+	rm "${WorkPath}data.csv"
+	mv "${WorkPath}filtered_data.csv" "${WorkPath}data.csv"
 fi
 
 # --------------------------------------- DATE FILTERING --------------------------------
-# [WARNING] CURRENTLY BROKEN
 if [[ "$IsDateArgumentSpecified" = true ]]; then
 	echo "Filtering dates..."
-	# This doesn't work ?
-	awk -F ';' "\$2 >= $MinDate && \$2 <= $MaxDate" "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
+	awk -v MinDate="$MinDate" -v MaxDate="$MaxDate" -F ";" '$2 >= MinDate && $2 <= MaxDate {print $0}' "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
 
 	# Again, we overwrite it.
 	rm "${WorkPath}data.csv"
