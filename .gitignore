@@ -63,3 +63,5 @@ cly-meteo-sorting
 # MacOS
 .DS_Store
 
+# VSCode
+.vscode/

@@ -2,112 +2,93 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-#include "common_types.h"
+#include "cly-meteo-headers.h"
 
 // ------------------------------------- ABR Manipulation -------------------------------------
-int searchForValueInABR(pABRNode a, int e) {
-	if(a == NULL){
+int searchForValueInABR(pABRNode tree, int e) {
+	if(tree == NULL){
 		return 0;
 	}
 
-	if(a->Value == e){
+	if(tree->Value == e){
 		return 1;
 	}
 
-	if(a->Value > e){
-		return searchForValueInABR(a->LeftNode, e);
+	if(tree->Value > e){
+		return searchForValueInABR(tree->leftNode, e);
 	} else{
-		return searchForValueInABR(a->RightNode, e);
+		return searchForValueInABR(tree->rightNode, e);
 	}
 }
 
-void showABRPrefix(pABRNode a){
-	if(a != NULL){
-		printf("%d ", a->Value);
-		showABRPrefix(a->LeftNode);
-		showABRPrefix(a->RightNode);
+void showABRPrefix(pABRNode tree){
+	if(tree != NULL){
+		printf("%d ", tree->Value);
+		showABRPrefix(tree->leftNode);
+		showABRPrefix(tree->rightNode);
 	} else {
 		printf("| ");
 	}
 }
 
-int IsABRProperlyFormatted(pABRNode a){
-	if(a == NULL){
+int IsABRProperlyFormatted(pABRNode tree){
+	if(tree == NULL){
 		return 1;
 	} else {
-		if(a->LeftNode != NULL){
-			if(a->LeftNode->Value > a->Value){
+		if(tree->leftNode != NULL){
+			if(tree->leftNode->Value > tree->Value){
 				return 0;
 			}
 		}
-		if(a->RightNode != NULL){
-			if(a->RightNode->Value < a->Value){
+		if(tree->rightNode != NULL){
+			if(tree->rightNode->Value < tree->Value){
 				return 0;
 			}
 		}
-		return IsABRProperlyFormatted(a->LeftNode) && IsABRProperlyFormatted(a->RightNode);
+		return IsABRProperlyFormatted(tree->leftNode) && IsABRProperlyFormatted(tree->rightNode);
 	}
 }
 
 // ------------------------------- ABR Modification -------------------------------
-pABRNode insertABRrecursive(pABRNode a, int e){
-	if(a == NULL){
-		a = malloc(sizeof(ABRNode));
-		if(a == NULL){
-			printf("\nMemory allocation error.\n");
-			exit(4);
-		}
-		a->Value = e;
-		a->LeftNode = NULL;
-		a->RightNode = NULL;
-	} else {
-		if(a->Value > e){
-			a->LeftNode = insertABRrecursive(a->LeftNode, e);
-		} else {
-			a->RightNode = insertABRrecursive(a->RightNode, e);
-		}
-	}
-	return a;
-}
-
-pABRNode insertABRiterative(pABRNode a, int e){
-	pABRNode temp = a;
-	pABRNode stockageTemp = temp;
+// Some optimisation could be done.
+pABRNode insertABRiterative(pABRNode tree, int e){
+	pABRNode temp = tree;
+	pABRNode storageTemp = temp;
 	while(temp != NULL){
-		stockageTemp = temp;
+		storageTemp = temp;
 		if(temp->Value < e){
-			temp = temp->LeftNode;
+			temp = temp->leftNode;
 		} else {
-			temp = temp->RightNode;
+			temp = temp->rightNode;
 		}
 	}
 	temp = malloc(sizeof(ABRNode));
 	if(temp == NULL){
-		printf("\nMemory allocation error.\n");
+		printf("Memory allocation error.");
 		exit(4);
 	}
 	temp->Value = e;
-	temp->LeftNode = NULL;
-	temp->RightNode = NULL;
+	temp->leftNode = NULL;
+	temp->rightNode = NULL;
 
-	if(stockageTemp->Value < e){
-		stockageTemp->LeftNode = temp;
+	if(storageTemp->Value < e){
+		storageTemp->leftNode = temp;
 	} else {
-		stockageTemp->RightNode = temp;
+		storageTemp->rightNode = temp;
 	}
 
-	return a;
+	return tree;
 }
 
 pABRNode delMax(pABRNode ABRNode, int * ValueToRemoveFromABR){
 	pABRNode tmp;
 
-	if (ABRNode->RightNode != NULL){
-		ABRNode->RightNode = delMax(ABRNode->RightNode,ValueToRemoveFromABR);
+	if (ABRNode->rightNode != NULL){
+		ABRNode->rightNode = delMax(ABRNode->rightNode,ValueToRemoveFromABR);
 	} else {
 		*ValueToRemoveFromABR = ABRNode->Value;
 		tmp = ABRNode;
-		ABRNode = ABRNode->LeftNode;
+		ABRNode = ABRNode->leftNode;
 		free(tmp);
 	}
 	return ABRNode;
@@ -123,21 +104,29 @@ pABRNode deleteElementFromABR(pABRNode ABRNode, int ValueToRemoveFromABR){
 
 	//Recursion
 	else if (ValueToRemoveFromABR > ABRNode->Value){
-		ABRNode->RightNode = deleteElementFromABR(ABRNode->RightNode,ValueToRemoveFromABR);
+		ABRNode->rightNode = deleteElementFromABR(ABRNode->rightNode,ValueToRemoveFromABR);
 	} else if (ValueToRemoveFromABR < ABRNode->Value){
-		ABRNode->LeftNode = deleteElementFromABR(ABRNode->LeftNode,ValueToRemoveFromABR);
+		ABRNode->leftNode = deleteElementFromABR(ABRNode->leftNode,ValueToRemoveFromABR);
 	}
 
 	//It's equal.
-	else if (ABRNode->LeftNode == NULL){
+	else if (ABRNode->leftNode == NULL){
 		tmp = ABRNode;
-		ABRNode = ABRNode->RightNode;
+		ABRNode = ABRNode->rightNode;
 		free(tmp);
 	}
 
 	else {
-		ABRNode->LeftNode = delMax(ABRNode->LeftNode,&ABRNode->Value);
+		ABRNode->leftNode = delMax(ABRNode->leftNode,&ABRNode->Value);
 	}
 
 	return NULL;
+}
+
+void wipeABR(pABRNode tree) {
+	if(tree != NULL) {
+		wipeABR(tree->leftNode);
+		wipeABR(tree->rightNode);
+		free(tree);
+	}
 }

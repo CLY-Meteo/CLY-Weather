@@ -25,15 +25,21 @@ declare -r all_arguments=("${data_type_arguments[@]}" "${location_arguments[@]}"
 # ----------- Variables -------------
 IsFileArgumentSpecified=false
 AssumeNextCanBePath=false
-IsOneDataArgumentSpecified=false
 IsDateArgumentSpecified=false
 UsedLocationArgument=""
 UsedSortArgument=""
+UsedDataArguments=()
 ShouldNextArgumentBeFilePath=false
 ShouldNextArgumentBeDate=0
 FilePath=""
 MinDate=""
 MaxDate=""
+
+
+
+
+
+
 
 # -------------------------------------------------------------------------------------------
 # This part of the code detects if the arguments entered by the user are valid.
@@ -110,7 +116,15 @@ do
 	for data_type_argument in "${data_type_arguments[@]}"
 	do
 		if [[ " ${data_type_argument} " == " ${argument} " ]]; then
-			IsOneDataArgumentSpecified=true
+			# We check that it's not already specified.
+			for used_data_argument in "${UsedDataArguments[@]}"
+			do
+				if [[ " ${used_data_argument} " == " ${argument} " ]]; then
+					echo "A data argument can only be specified once."
+					exit 1
+				fi
+			done
+			UsedDataArguments=( "${UsedDataArguments[@]}" "$argument" )
 			continue
 		fi
 	done
@@ -149,7 +163,7 @@ do
 done
 
 # Post-argument checks
-if [[ ! "$IsOneDataArgumentSpecified" = true ]]; then
+if [[ "$UsedDataArguments" = "" ]]; then
 	echo "No valid data type specified."
 	exit 1
 fi
@@ -171,6 +185,21 @@ if [[ "$IsDateArgumentSpecified" = true ]]; then
 		exit 1
 	fi
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # ------------------------ Check for dependencies ------------------------
 if [[ "$AlwaysRebuild" = true ]]; then
@@ -219,12 +248,31 @@ if ! [ -e $FilePath -a -r $FilePath ]; then
 fi
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ------------------------------------------------------------------------------------------
 # We get the file in the path and copy it to the work location. After creating it, if necessary.
 # Depending on the distro, this could be in the RAM and take a lot of memory. Thus, IT IS IMPORTANT TO CLEAN WHEN WE'RE DONE.
 mkdir -p $WorkPath
 echo "Hold on..."
 cp -f "$FilePath" "${WorkPath}data.csv"
+
+# We remove the first line
+sed -i '1d' "${WorkPath}data.csv"
 
 # --------------------------------------- LOCATION FILTERING --------------------------------
 # I'll have to remember to check if the coordinates are correct.
@@ -270,21 +318,130 @@ if [[ ! "$UsedLocationArgument" = "" ]]; then
 		exit 4 # You'd think this would be a user error, so a 1, but there's tests that should prevent this from happening. So, it's a bug.
 		;;
 	esac
-	awk -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat) && (a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
 
-	rm "${WorkPath}data.csv"
-	mv "${WorkPath}filtered_data.csv" "${WorkPath}data.csv"
+	# Code provided by ChatGPT
+	awk -i inplace -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat) && (a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv"
 fi
 
 # --------------------------------------- DATE FILTERING --------------------------------
 if [[ "$IsDateArgumentSpecified" = true ]]; then
 	echo "Filtering dates..."
-	awk -v MinDate="$MinDate" -v MaxDate="$MaxDate" -F ";" '$2 >= MinDate && $2 <= MaxDate {print $0}' "${WorkPath}data.csv" > "${WorkPath}filtered_data.csv"
 
-	# Again, we overwrite it.
-	rm "${WorkPath}data.csv"
-	mv "${WorkPath}filtered_data.csv" "${WorkPath}data.csv"
+	# ChatGPT
+	awk -i inplace -v MinDate="$MinDate" -v MaxDate="$MaxDate" -F ";" '$2 >= MinDate && $2 <= MaxDate {print $0}' "${WorkPath}data.csv"
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# --------------------------------------- DATA FILTERING --------------------------------
+# SOME INFOS GENERATED ARE NOT USABLE FOR GNUPLOT.
+# NEEDS OUTPUT MODIFICATION.
+for i in $UsedDataArguments; do
+	case $i in
+		"-h")
+		# Altitude
+		echo "Filtering according to altitude per station..."
+
+		# Code provided by ChatGPT
+		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
+		;;
+
+		"-m")
+		# Humidity
+		echo "Filtering according to maximum humidity per station..."
+
+		# Code provided by ChatGPT
+		awk -F ";" '{if ($1 in max_humidity) { if ($6 > max_humidity[$1]) {max_humidity[$1] = $6} } else {max_humidity[$1] = $6}} END {for (id in max_humidity) { print id ";" max_humidity[id]}}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
+		;;
+
+
+
+
+
+
+		"-t1")
+		# Station ID; Minimum Temperature; Mean Temperature; Maximum Temperature
+		echo "Filtering using t1..."
+
+		# Code provided by ChatGPT
+		awk -F ";" '{
+			sum[$1]+=$11;
+			count[$1]++;
+			if(min[$1]>$11 || !min[$1]) min[$1]=$11;
+			if(max[$1]<$11 || !max[$1]) max[$1]=$11;
+		}
+		END {
+			for (i in sum) {
+				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
+			}
+		}' "${WorkPath}data.csv" > "${WorkPath}t1_filtered_data_unsorted.csv"
+		;;
+
+		"-p1")
+		# Station ID; Minimum Pressure; Mean Pressure; Maximum Pressure
+		echo "Filtering using p1..."
+
+		# Code provided by ChatGPT
+		awk -F ";" '{
+			sum[$1]+=$6;
+			count[$1]++;
+			if(min[$1]>$6 || !min[$1]) min[$1]=$6;
+			if(max[$1]<$6 || !max[$1]) max[$1]=$6;
+		}
+		END {
+			for (i in sum) {
+				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
+			}
+		}' "${WorkPath}data.csv" > "${WorkPath}p1_filtered_data_unsorted.csv"
+		;;
+
+
+
+		"-t2")
+		echo "Filtering using t2..."
+		;;
+
+		"-p2")
+		echo "Filtering using p2..."
+		;;
+
+
+
+
+		"-t3")
+		echo "Filtering using t3..."
+		;;
+
+		"-p3")
+		echo "Filtering using p3..."
+		;;
+
+		"*")
+		echo "This shouldn't be happening. Dropping info that could be useful for debugging :"
+		echo "Value of i : ${i}"
+		exit 4
+		;;
+	esac
+done
+
+
+
+
+
+
+
 
 # --------------------------- Final cleaning -----------------
 if [[ $DisableCleaning = false ]]; then
