@@ -44,8 +44,7 @@ MaxDate=""
 # -------------------------------------------------------------------------------------------
 # This part of the code detects if the arguments entered by the user are valid.
 
-for argument in $arguments
-do	
+for argument in $arguments; do	
 	if [[ "$ShouldNextArgumentBeFilePath" = true ]]; then
 		FilePath=$argument
 		ShouldNextArgumentBeFilePath=false

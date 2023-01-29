@@ -1,6 +1,7 @@
 //-----------------------------------------ABR------------------------------------
 typedef struct ABRNode {
 	int Value;
+	char *Data;
 	struct ABRNode *leftNode;
 	struct ABRNode *rightNode;
 } ABRNode;
@@ -26,6 +27,7 @@ void wipeABR(pABRNode tree);
 //------------------------------------ Chained lists
 typedef struct ChainedListNode {
 	int Value;
+	char *Data;
 	struct ChainedListNode *NextNode;
 } ChainedListNode;
 
@@ -43,6 +45,7 @@ void showList(ChainedListNode * pChainedListNode);
 //------------------------------------- AVL ------------------------------------
 typedef struct AVLNode {
 	int Value;
+	char *Data;
 	struct AVLNode *leftNode;
 	struct AVLNode *rightNode;
 	int Balance;
