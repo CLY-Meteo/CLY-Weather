@@ -117,14 +117,13 @@ do
 	do
 		if [[ " ${data_type_argument} " == " ${argument} " ]]; then
 			# We check that it's not already specified.
-			for used_data_argument in "${UsedDataArguments[@]}"
-			do
+			for used_data_argument in "${UsedDataArguments[@]}"; do
 				if [[ " ${used_data_argument} " == " ${argument} " ]]; then
 					echo "A data argument can only be specified once."
 					exit 1
 				fi
 			done
-			UsedDataArguments=( "${UsedDataArguments[@]}" "$argument" )
+			UsedDataArguments+=" "$argument
 			continue
 		fi
 	done
@@ -240,6 +239,10 @@ if [[ ! $(type -P gnuplot) ]]; then
 	echo "gnuplot is not installed. Can't proceed."
 	exit 4
 fi
+if [[ ! $(type -P awk) ]]; then
+	echo "awk is not installed. Can't proceed."
+	exit 4
+fi
 
 # -------------------------------------- File Checks --------------------------------------
 if ! [ -e $FilePath -a -r $FilePath ]; then
@@ -279,36 +282,40 @@ sed -i '1d' "${WorkPath}data.csv"
 # Something was off with the file though. It didn't have the empty IDs.
 
 if [[ ! "$UsedLocationArgument" = "" ]]; then
-	echo "Filtering locations..."
-	
 	case $UsedLocationArgument in
 		"-F")
 		#France Métropolitaine + Corse
+		echo "Filtering to France only..."
 		MinLat=41 ; MaxLat=51 ; MinLong=-6 ; MaxLong=10
 		;;
 
 		"-G")
 		# Guyane Française
+		echo "Filtering to French Guiana only..."
 		MinLat=-3 ; MaxLat=5 ; MinLong=-54 ; MaxLong=-51
 		;;
 
 		"-S")
 		# Saint-Pierre et Miquelon
+		echo "Filtering to Saint-Pierre et Miquelon only..."
 		MinLat=46 ; MaxLat=47 ; MinLong=-56 ; MaxLong=-55
 		;;
 
 		"-A")
 		# Antilles
+		echo "Filtering to the Antilles only..."
 		MinLat=15 ; MaxLat=25 ; MinLong=-89 ; MaxLong=-60
 		;;
 
 		"-O")
 		# Océan Indien
+		echo "Filtering to the Indian Ocean only..."
 		MinLat=-50 ; MaxLat=40 ; MinLong=20 ; MaxLong=180
 		;;
 
 		"-Q")
 		# Antarctique
+		echo "Filtering to Antarctica only..."
 		MinLat=-90 ; MaxLat=-60 ; MinLong=-180 ; MaxLong=180
 		;;
 
@@ -356,6 +363,8 @@ for i in $UsedDataArguments; do
 
 		# Code provided by ChatGPT
 		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
+		# Insert here usage of the C program for sorting.
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_filtered_data_unsorted.csv"
 		;;
 
 		"-m")
@@ -363,7 +372,29 @@ for i in $UsedDataArguments; do
 		echo "Filtering according to maximum humidity per station..."
 
 		# Code provided by ChatGPT
-		awk -F ";" '{if ($1 in max_humidity) { if ($6 > max_humidity[$1]) {max_humidity[$1] = $6} } else {max_humidity[$1] = $6}} END {for (id in max_humidity) { print id ";" max_humidity[id]}}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
+		awk -F ";" '{
+			if ($1 in max_humidity) { 
+				if ($6 > max_humidity[$1]) {
+					max_humidity[$1] = $6
+					coordinates[$1] = $10
+				} 
+			} else {
+				max_humidity[$1] = $6
+				coordinates[$1] = $10
+				}
+			} END {
+				for (id in max_humidity) { 
+					print max_humidity[id] ";" id ";" coordinates[id]
+				}
+			}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
+		# Insert here usage of the C program for sorting.
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_filtered_data_unsorted.csv"
+		;;
+
+		"-w")
+		# Wind
+		echo "Filtering according to wind per station..."
+		echo "This is not implemented yet."
 		;;
 
 
@@ -375,14 +406,13 @@ for i in $UsedDataArguments; do
 		# Station ID; Minimum Temperature; Mean Temperature; Maximum Temperature
 		echo "Filtering using t1..."
 
-		# Code provided by ChatGPT
+		# Code provided by ChatGPT, modified by Jordan.
 		awk -F ";" '{
 			sum[$1]+=$11;
 			count[$1]++;
 			if(min[$1]>$11 || !min[$1]) min[$1]=$11;
 			if(max[$1]<$11 || !max[$1]) max[$1]=$11;
-		}
-		END {
+		} END {
 			for (i in sum) {
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
@@ -399,8 +429,7 @@ for i in $UsedDataArguments; do
 			count[$1]++;
 			if(min[$1]>$6 || !min[$1]) min[$1]=$6;
 			if(max[$1]<$6 || !max[$1]) max[$1]=$6;
-		}
-		END {
+		} END {
 			for (i in sum) {
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
@@ -411,10 +440,30 @@ for i in $UsedDataArguments; do
 
 		"-t2")
 		echo "Filtering using t2..."
+
+		# Code provided by ChatGPT, modified by Jordan.
+		awk -F ';' '{ 
+			temp[$2] += $11; 
+			count[$2] += 1; 
+		} END { 
+			for (key in temp) { 
+				printf "%s;%f\n", key, temp[key]/count[key] 
+			} 
+		}' "${WorkPath}data.csv" > "${WorkPath}t2_filtered_data_unsorted.csv"
 		;;
 
 		"-p2")
 		echo "Filtering using p2..."
+
+		# Code provided by ChatGPT, modified by Jordan.
+		awk -F ';' '{ 
+			temp[$2] += $6; 
+			count[$2] += 1; 
+		} END { 
+			for (key in temp) { 
+				printf "%s;%f\n", key, temp[key]/count[key] 
+			} 
+		}' "${WorkPath}data.csv" > "${WorkPath}p2_filtered_data_unsorted.csv"
 		;;
 
 
@@ -422,10 +471,18 @@ for i in $UsedDataArguments; do
 
 		"-t3")
 		echo "Filtering using t3..."
+		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
+		# Insert here usage of the C program to sort the data.
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_unsorted.csv"
+		# Insert here usage of the C program to sort the data.
 		;;
 
 		"-p3")
 		echo "Filtering using p3..."
+		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
+		# Insert here usage of the C program to sort the data.
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_unsorted.csv"
+		# Insert here usage of the C program to sort the data.
 		;;
 
 		"*")
