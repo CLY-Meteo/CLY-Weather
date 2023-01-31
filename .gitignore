@@ -65,3 +65,6 @@ cly-meteo-sorting
 
 # VSCode
 .vscode/
+
+# GNUPlot
+*.png

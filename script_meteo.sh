@@ -23,17 +23,30 @@ declare -r help_argument="--help" #Optional
 declare -r all_arguments=("${data_type_arguments[@]}" "${location_arguments[@]}" "${sort_arguments[@]}" "${date_argument}" "${file_argument}" "${help_argument}")
 
 # ----------- Variables -------------
-IsFileArgumentSpecified=false
-AssumeNextCanBePath=false
-IsDateArgumentSpecified=false
 UsedLocationArgument=""
 UsedSortArgument=""
 UsedDataArguments=()
+
+IsFileArgumentSpecified=false
+AssumeNextCanBePath=false
 ShouldNextArgumentBeFilePath=false
-ShouldNextArgumentBeDate=0
 FilePath=""
+
+IsDateArgumentSpecified=false
+ShouldNextArgumentBeDate=0
 MinDate=""
 MaxDate=""
+
+# Unused right now.
+IsLatitudeArgumentSpecified=false
+ShouldNextArgumentBeLatitude=0
+MinLatitude=""
+MaxLatitude=""
+
+IsLongitudeArgumentSpecified=false
+ShouldNextArgumentBeLongitude=0
+MinLongitude=""
+MaxLongitude=""
 
 
 
@@ -352,20 +365,42 @@ fi
 
 
 # --------------------------------------- DATA FILTERING --------------------------------
-# SOME INFOS GENERATED ARE NOT USABLE FOR GNUPLOT.
-# NEEDS OUTPUT MODIFICATION.
 for i in $UsedDataArguments; do
 	case $i in
+		# ------------------------------ Altitude ------------------------------
 		"-h")
-		# Altitude
 		echo "Filtering according to altitude per station..."
 
 		# Code provided by ChatGPT
 		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}altitude_filtered_data_unsorted.csv" -o "${WorkPath}altitude_filtered_data_sorted.csv" -r
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_filtered_data_sorted.csv"
+		# ------------------------
+		./cly-meteo-sorting -f "${WorkPath}altitude_filtered_data_unsorted.csv" -o "${WorkPath}altitude_data.csv" -r
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_data.csv"
+		#rm "${WorkPath}altitude_filtered_data_unsorted.csv"
+
+		sed -i 's/,/;/g' "${WorkPath}altitude_data.csv"
+		echo "Making the map..."
+		gnuplot -persist -e "reset;
+            set datafile separator \";\";
+            set title \"Height per station\";
+			set cblabel \"Height (m)\";
+			set xlabel \"Longitude\";
+			set ylabel \"Latitude\";
+			set xrange [-180:180];
+			set yrange [-90:90];
+			set dgrid3d 100,100;
+			set view map;
+			splot '${WorkPath}altitude_data.csv' u 4:3:2 w pm3d lw 6 palette;"
 		;;
 
+
+
+
+
+
+
+
+		# ------------------------------ Humidity ------------------------------
 		"-m")
 		# Humidity
 		echo "Filtering according to maximum humidity per station..."
@@ -386,12 +421,32 @@ for i in $UsedDataArguments; do
 					print max_humidity[id] ";" id ";" coordinates[id]
 				}
 			}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}humidity_filtered_data_unsorted.csv" -o "${WorkPath}humidity_filtered_data_sorted.csv" -r
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_filtered_data_sorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}humidity_filtered_data_unsorted.csv" -o "${WorkPath}humidity_data.csv" -r
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_data.csv"
+		#rm "${WorkPath}humidity_filtered_data_unsorted.csv"
+
+		sed -i 's/,/;/g' "${WorkPath}humidity_data.csv"
+		echo "Making the map..."
+		gnuplot -persist -e "reset;
+            set datafile separator \";\";
+            set title \"Maximum humidity per station\";
+			set cblabel \"Maximum humidity (%)\";
+			set xlabel \"Longitude\";
+			set ylabel \"Latitude\";
+			set xrange [-180:180];
+			set yrange [-90:90];
+			set dgrid3d 100,100;
+			set view map;
+			splot '${WorkPath}humidity_data.csv' u 4:3:2 w pm3d lw 6 palette;"
 		;;
 
+
+
+
+
+
 		"-w")
-		# Wind
+		# ------------------------------ Wind ------------------------------
 		echo "Filtering according to wind per station..."
 		echo "This is not implemented yet."
 		;;
@@ -400,9 +455,8 @@ for i in $UsedDataArguments; do
 
 
 
-
+		# ------------------------------ Station ID; Minimum Temperature; Mean Temperature; Maximum Temperature ------------------------------
 		"-t1")
-		# Station ID; Minimum Temperature; Mean Temperature; Maximum Temperature
 		echo "Filtering using t1..."
 
 		# Code provided by ChatGPT, modified by Jordan.
@@ -416,14 +470,29 @@ for i in $UsedDataArguments; do
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}t1_filtered_data_unsorted.csv"
+		# -------------------------------------------
 		./cly-meteo-sorting -f "${WorkPath}t1_filtered_data_unsorted.csv" -o "${WorkPath}t1_filtered_data_sorted.csv"
+		#rm "${WorkPath}t1_filtered_data_unsorted.csv"
+
+		gnuplot -persist -e "reset;set datafile separator \";\";
+			set title \"Temperature statistics by station\";
+			set xlabel \"Station ID\";
+			set ylabel \"Temperature (°C)\";
+			set grid;
+			set key top left;
+			set style data linespoints;
+			set style fill solid 0.5;
+			set boxwidth 0.5;
+			plot '${WorkPath}t1_filtered_data_sorted.csv' using 1:3:2:4 with yerrorbars title \"Mean\";
+			replot '${WorkPath}t1_filtered_data_sorted.csv' using 1:2 with points title \"Minimum\";
+			replot '${WorkPath}t1_filtered_data_sorted.csv' using 1:4 with points title \"Maximum\";"
 		;;
 
+		# ------------------------------ Station ID; Minimum Pressure; Mean Pressure; Maximum Pressure ------------------------------
 		"-p1")
-		# Station ID; Minimum Pressure; Mean Pressure; Maximum Pressure
 		echo "Filtering using p1..."
 
-		# Code provided by ChatGPT
+		# Code provided by ChatGPT, modified by Jordan.
 		awk -F ";" '{
 			sum[$1]+=$6;
 			count[$1]++;
@@ -434,7 +503,22 @@ for i in $UsedDataArguments; do
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}p1_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}p1_filtered_data_unsorted.csv" -o "${WorkPath}p1_filtered_data_sorted.csv"
+		# -------------------------------------------
+		./cly-meteo-sorting -f "${WorkPath}p1_filtered_data_unsorted.csv" -o "${WorkPath}p1_data.csv"
+		#rm "${WorkPath}p1_filtered_data_unsorted.csv"
+
+		gnuplot -persist -e "reset;set datafile separator \";\";
+			set title \"Pressure statistics by station\";
+			set xlabel \"Station ID\";
+			set ylabel \"Pressure (hPa)\";
+			set grid;
+			set key top left;
+			set style data linespoints;
+			set style fill solid 0.5;
+			set boxwidth 0.5;
+			plot '${WorkPath}p1_data.csv' using 1:3:2:4 with yerrorbars title \"Mean\";
+			replot '${WorkPath}p1_data.csv' using 1:2 with points title \"Minimum\";
+			replot '${WorkPath}p1_data.csv' using 1:4 with points title \"Maximum\";"
 		;;
 
 
@@ -451,7 +535,18 @@ for i in $UsedDataArguments; do
 				printf "%s;%f\n", key, temp[key]/count[key] 
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}t2_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}t2_filtered_data_unsorted.csv" -o "${WorkPath}t2_filtered_data_sorted.csv"
+		# -------------------------------------------
+		./cly-meteo-sorting -f "${WorkPath}t2_filtered_data_unsorted.csv" -o "${WorkPath}t2_data.csv"
+		#rm "${WorkPath}t2_filtered_data_unsorted.csv"
+
+		gnuplot -persist -e "reset;
+			set title 'Mean temperature over time';
+			set xlabel 'Time';
+			set ylabel 'Temperature (°C)';
+			set xdata time;
+			set timefmt '%Y-%m-%dT%H:%M:%S%z';
+			set datafile separator ';';
+			plot '${WorkPath}t2_data.csv' using 1:2 w l;"
 		;;
 
 		"-p2")
@@ -466,20 +561,32 @@ for i in $UsedDataArguments; do
 				printf "%s;%f\n", key, temp[key]/count[key] 
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}p2_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}p2_filtered_data_unsorted.csv" -o "${WorkPath}p2_filtered_data_sorted.csv"
+		# -------------------------------------------
+		./cly-meteo-sorting -f "${WorkPath}p2_filtered_data_unsorted.csv" -o "${WorkPath}p2_data.csv"
+		#rm "${WorkPath}p2_filtered_data_unsorted.csv"
+
+		gnuplot -persist -e "reset;
+			set title 'Mean pressure over time';
+			set xlabel 'Time';
+			set ylabel 'Pressure (hPa)';
+			set xdata time;
+			set timefmt '%Y-%m-%dT%H:%M:%S%z';
+			set datafile separator ';';
+			plot '${WorkPath}p2_data.csv' using 1:2 w l;"
 		;;
 
 
 
 		# THIS IS TOO SLOW ! IMPLEMENT TAB METHOD IN THE C PROGRAM AND USE A SORTING ALGORITHM.
+		# Plus, this is untested.
 		"-t3")
 		echo "Filtering using t3..."
 		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv"
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv" --tab
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv"
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv" --tab
 		echo "Soon done..."
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted2.csv"
 		;;
@@ -488,10 +595,10 @@ for i in $UsedDataArguments; do
 		echo "Filtering using p3..."
 		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv"
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv" --tab
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv"
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv" --tab
 		echo "Soon done..."
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted2.csv"
 		;;
