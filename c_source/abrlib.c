@@ -1,26 +1,35 @@
 #include<stddef.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
 #include "cly-meteo-headers.h"
 
-// ------------------------------------- ABR Manipulation -------------------------------------
-int searchForValueInABR(pABRNode tree, int e) {
+// ------------------------------- ABR Modification -------------------------------
+// Some optimisation could be done.
+pABRNode insertInABR(pABRNode tree, long Value, char * Data){
 	if(tree == NULL){
-		return 0;
-	}
-
-	if(tree->Value == e){
-		return 1;
-	}
-
-	if(tree->Value > e){
-		return searchForValueInABR(tree->leftNode, e);
-	} else{
-		return searchForValueInABR(tree->rightNode, e);
+		pABRNode NewNode = malloc(sizeof(ABRNode));
+		if (NewNode == NULL) {
+			printf("\nMemory allocation error.\n");
+			exit(4);
+		}
+		NewNode->Value = Value;
+		NewNode->Data = Data;
+		NewNode->leftNode = NULL;
+		NewNode->rightNode = NULL;
+		return NewNode;
+	} else {
+		if(Value < tree->Value){
+			tree->leftNode = insertInABR(tree->leftNode, Value, Data);
+		} else {
+			tree->rightNode = insertInABR(tree->rightNode, Value, Data);
+		}
+		return tree;
 	}
 }
 
+// ------------------------------------- ABR Manipulation -------------------------------------
 void showABRPrefix(pABRNode tree){
 	if(tree != NULL){
 		printf("%d ", tree->Value);
@@ -30,103 +39,50 @@ void showABRPrefix(pABRNode tree){
 		printf("| ");
 	}
 }
-
-int IsABRProperlyFormatted(pABRNode tree){
-	if(tree == NULL){
-		return 1;
-	} else {
-		if(tree->leftNode != NULL){
-			if(tree->leftNode->Value > tree->Value){
-				return 0;
-			}
-		}
-		if(tree->rightNode != NULL){
-			if(tree->rightNode->Value < tree->Value){
-				return 0;
-			}
-		}
-		return IsABRProperlyFormatted(tree->leftNode) && IsABRProperlyFormatted(tree->rightNode);
+void showABRData(pABRNode tree){
+	if(tree != NULL){
+		showABRData(tree->leftNode);
+		printf("%ld - [%s]", tree->Value,tree->Data);
+		showABRData(tree->rightNode);
 	}
-}
-
-// ------------------------------- ABR Modification -------------------------------
-// Some optimisation could be done.
-pABRNode insertABRiterative(pABRNode tree, int e){
-	pABRNode temp = tree;
-	pABRNode storageTemp = temp;
-	while(temp != NULL){
-		storageTemp = temp;
-		if(temp->Value < e){
-			temp = temp->leftNode;
-		} else {
-			temp = temp->rightNode;
-		}
-	}
-	temp = malloc(sizeof(ABRNode));
-	if(temp == NULL){
-		printf("Memory allocation error.");
-		exit(4);
-	}
-	temp->Value = e;
-	temp->leftNode = NULL;
-	temp->rightNode = NULL;
-
-	if(storageTemp->Value < e){
-		storageTemp->leftNode = temp;
-	} else {
-		storageTemp->rightNode = temp;
-	}
-
-	return tree;
-}
-
-pABRNode delMax(pABRNode ABRNode, int * ValueToRemoveFromABR){
-	pABRNode tmp;
-
-	if (ABRNode->rightNode != NULL){
-		ABRNode->rightNode = delMax(ABRNode->rightNode,ValueToRemoveFromABR);
-	} else {
-		*ValueToRemoveFromABR = ABRNode->Value;
-		tmp = ABRNode;
-		ABRNode = ABRNode->leftNode;
-		free(tmp);
-	}
-	return ABRNode;
-}
-
-pABRNode deleteElementFromABR(pABRNode ABRNode, int ValueToRemoveFromABR){
-	pABRNode tmp;
-
-	//Element not in tree
-	if(ABRNode == NULL){
-		return ABRNode;
-	}
-
-	//Recursion
-	else if (ValueToRemoveFromABR > ABRNode->Value){
-		ABRNode->rightNode = deleteElementFromABR(ABRNode->rightNode,ValueToRemoveFromABR);
-	} else if (ValueToRemoveFromABR < ABRNode->Value){
-		ABRNode->leftNode = deleteElementFromABR(ABRNode->leftNode,ValueToRemoveFromABR);
-	}
-
-	//It's equal.
-	else if (ABRNode->leftNode == NULL){
-		tmp = ABRNode;
-		ABRNode = ABRNode->rightNode;
-		free(tmp);
-	}
-
-	else {
-		ABRNode->leftNode = delMax(ABRNode->leftNode,&ABRNode->Value);
-	}
-
-	return NULL;
 }
 
 void wipeABR(pABRNode tree) {
 	if(tree != NULL) {
-		wipeABR(tree->leftNode);
-		wipeABR(tree->rightNode);
+		if(tree->Data != NULL){
+			free(tree->Data);
+		}
+
+		if(tree->leftNode != NULL){
+			wipeABR(tree->leftNode);
+		}
+		if(tree->rightNode != NULL){
+			wipeABR(tree->rightNode);
+		}
 		free(tree);
+	}
+}
+
+void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool useReverse){
+	if(tree != NULL){
+		if(!useReverse){
+			writeABRTreeDataToFile(tree->leftNode, outputFile, useReverse);
+			//Workaround
+			if(tree->Data[strlen(tree->Data)-1] == '1'){
+				tree->Data[strlen(tree->Data)-1] = '\0';
+			}
+			fprintf(outputFile, "%s", tree->Data);
+			writeABRTreeDataToFile(tree->rightNode, outputFile, useReverse);
+		} else {
+			writeABRTreeDataToFile(tree->rightNode, outputFile, useReverse);
+			
+			//Workaround
+			if(tree->Data[strlen(tree->Data)-1] == '1'){
+				tree->Data[strlen(tree->Data)-1] = '\0';
+			}
+
+			fprintf(outputFile, "%s", tree->Data);
+			writeABRTreeDataToFile(tree->leftNode, outputFile, useReverse);
+		}
 	}
 }

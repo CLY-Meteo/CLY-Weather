@@ -362,8 +362,8 @@ for i in $UsedDataArguments; do
 
 		# Code provided by ChatGPT
 		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
-		# Insert here usage of the C program for sorting.
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}altitude_filtered_data_unsorted.csv" -o "${WorkPath}altitude_filtered_data_sorted.csv" -r
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_filtered_data_sorted.csv"
 		;;
 
 		"-m")
@@ -386,8 +386,8 @@ for i in $UsedDataArguments; do
 					print max_humidity[id] ";" id ";" coordinates[id]
 				}
 			}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
-		# Insert here usage of the C program for sorting.
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}humidity_filtered_data_unsorted.csv" -o "${WorkPath}humidity_filtered_data_sorted.csv" -r
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_filtered_data_sorted.csv"
 		;;
 
 		"-w")
@@ -416,6 +416,7 @@ for i in $UsedDataArguments; do
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}t1_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}t1_filtered_data_unsorted.csv" -o "${WorkPath}t1_filtered_data_sorted.csv"
 		;;
 
 		"-p1")
@@ -433,6 +434,7 @@ for i in $UsedDataArguments; do
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}p1_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}p1_filtered_data_unsorted.csv" -o "${WorkPath}p1_filtered_data_sorted.csv"
 		;;
 
 
@@ -449,6 +451,7 @@ for i in $UsedDataArguments; do
 				printf "%s;%f\n", key, temp[key]/count[key] 
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}t2_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}t2_filtered_data_unsorted.csv" -o "${WorkPath}t2_filtered_data_sorted.csv"
 		;;
 
 		"-p2")
@@ -463,25 +466,34 @@ for i in $UsedDataArguments; do
 				printf "%s;%f\n", key, temp[key]/count[key] 
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}p2_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}p2_filtered_data_unsorted.csv" -o "${WorkPath}p2_filtered_data_sorted.csv"
 		;;
 
 
 
-
+		# THIS IS TOO SLOW ! IMPLEMENT TAB METHOD IN THE C PROGRAM AND USE A SORTING ALGORITHM.
 		"-t3")
 		echo "Filtering using t3..."
 		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
-		# Insert here usage of the C program to sort the data.
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_unsorted.csv"
-		# Insert here usage of the C program to sort the data.
+		echo "Warning ! This may take a while..."
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv"
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted1.csv"
+		echo "Still going..."
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv"
+		echo "Soon done..."
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted2.csv"
 		;;
 
 		"-p3")
 		echo "Filtering using p3..."
 		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
-		# Insert here usage of the C program to sort the data.
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_unsorted.csv"
-		# Insert here usage of the C program to sort the data.
+		echo "Warning ! This may take a while..."
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv"
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted1.csv"
+		echo "Still going..."
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv"
+		echo "Soon done..."
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted2.csv"
 		;;
 
 		"*")

@@ -1,6 +1,9 @@
+#include <stdio.h>
+#include <stdbool.h>
+
 //-----------------------------------------ABR------------------------------------
 typedef struct ABRNode {
-	int Value;
+	long Value;
 	char *Data;
 	struct ABRNode *leftNode;
 	struct ABRNode *rightNode;
@@ -9,14 +12,13 @@ typedef struct ABRNode {
 typedef ABRNode *pABRNode;
 
 // ABR Manipulation
-int searchForValueInABR(pABRNode tree, int e);
 void showABRPrefix(pABRNode tree);
-int IsABRProperlyFormatted(pABRNode tree);
+void showABRData(pABRNode tree);
 
 // ABR Modification
-pABRNode insertABRiterative(pABRNode tree, int e);
-pABRNode deleteElementFromABR(pABRNode ABRNode, int ValueToRemoveFromABR);
+pABRNode insertInABR(pABRNode tree, long Value, char * Data);
 void wipeABR(pABRNode tree);
+void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool isReverse);
 
 
 
@@ -24,18 +26,19 @@ void wipeABR(pABRNode tree);
 
 
 
-//------------------------------------ Chained lists
-typedef struct ChainedListNode {
-	int Value;
+//------------------------------------ Tab
+typedef struct tabEntry {
+	long Value;
 	char *Data;
-	struct ChainedListNode *NextNode;
-} ChainedListNode;
+} tabEntry;
 
-typedef ChainedListNode *pChainedListNode;
+typedef tabEntry *pTabEntry;
 
-//UNFINISHED
-ChainedListNode * insertAtTop(ChainedListNode* pChainedListNode, int Value);
-void showList(ChainedListNode * pChainedListNode);
+typedef struct tabList {
+	pTabEntry tab;
+	int size;
+	int max;
+} tabList;
 
 
 
@@ -44,7 +47,7 @@ void showList(ChainedListNode * pChainedListNode);
 
 //------------------------------------- AVL ------------------------------------
 typedef struct AVLNode {
-	int Value;
+	long Value;
 	char *Data;
 	struct AVLNode *leftNode;
 	struct AVLNode *rightNode;
@@ -53,13 +56,12 @@ typedef struct AVLNode {
 
 typedef AVLNode *pAVLNode;
 
-
-pAVLNode createAVLTree(int Value);
-pAVLNode insertInAVL(pAVLNode tree, int Value, int *h);
-pAVLNode deleteValueFromAVL(pAVLNode tree, int Value, int *h);
+pAVLNode createAVLTree(long Value, char * Data);
+pAVLNode insertInAVL(pAVLNode tree, long Value, int *h, char * Data);
 void wipeAVL(pAVLNode tree);
-
-
+void showAVLPrefix(pAVLNode tree);
+void showAVLData(pAVLNode tree);
+void writeAVLTreeDataToFile(pAVLNode tree, FILE * outputFile, bool isReverse);
 
 
 

@@ -1,4 +1,3 @@
-
 CC=gcc
 EXECUTABLE_NAME=cly-meteo-sorting
 
@@ -6,12 +5,11 @@ EXECUTABLE_NAME=cly-meteo-sorting
 BUILD_FOLDER=
 
 # Release
-release : all clean
-run_release : release run
+release : all clean_objects
 
 # Compilation
-math.o :
-	@$(CC) -c math.c -o $(BUILD_FOLDER)math.o
+utils.o :
+	@$(CC) -c utils.c -o $(BUILD_FOLDER)utils.o
 
 avllib.o :
 	@$(CC) -c avllib.c -o $(BUILD_FOLDER)avllib.o
@@ -26,14 +24,12 @@ main.o :
 	@$(CC) -c main.c -o $(BUILD_FOLDER)main.o
 
 # Everything at once
-all : math.o avllib.o abrlib.o tablib.o main.o
+all : utils.o avllib.o abrlib.o tablib.o main.o
 	@$(CC) $(BUILD_FOLDER)*.o -o $(EXECUTABLE_NAME)
 
 # Cleaner
-clean :
+clean_objects :
 	@rm -f $(BUILD_FOLDER)*.o
 
-# Runners
-run : all
-	@echo "Running $(EXECUTABLE_NAME)"
-	@./$(EXECUTABLE_NAME)
+clean : clean_objects
+	@rm -f $(EXECUTABLE_NAME)
