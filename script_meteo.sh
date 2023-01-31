@@ -15,12 +15,13 @@ declare -r ScriptDirectory=$(dirname "$0")
 
 declare -r data_type_arguments=("-t1" "-t2" "-t3" "-p1" "-p2" "-p3" "-w" "-h" "-m") #Required, not exclusive
 declare -r location_arguments=("-F" "-G" "-S" "-A" "-O" "-Q") #Exclusive between each other
+declare -r geo_arguments=("-g -a") #Can"t be used with location arguments
 declare -r date_argument="-d" #Optional
 declare -r sort_arguments=("--tab" "--abr" "--avl") #Exclusive between each other
 declare -r file_argument="-f" #Required
 declare -r help_argument="--help" #Optional
 
-declare -r all_arguments=("${data_type_arguments[@]}" "${location_arguments[@]}" "${sort_arguments[@]}" "${date_argument}" "${file_argument}" "${help_argument}")
+declare -r all_arguments=("${data_type_arguments[@]}" "${location_arguments[@]}" "${sort_arguments[@]}" "${date_argument}" "${file_argument}" "${help_argument}" "${geo_arguments[@]}")
 
 # ----------- Variables -------------
 UsedLocationArgument=""
@@ -38,15 +39,15 @@ MinDate=""
 MaxDate=""
 
 # Unused right now.
-IsLatitudeArgumentSpecified=false
-ShouldNextArgumentBeLatitude=0
-MinLatitude=""
-MaxLatitude=""
-
 IsLongitudeArgumentSpecified=false
 ShouldNextArgumentBeLongitude=0
 MinLongitude=""
 MaxLongitude=""
+
+IsLatitudeArgumentSpecified=false
+ShouldNextArgumentBeLatitude=0
+MinLatitude=""
+MaxLatitude=""
 
 
 
@@ -89,6 +90,52 @@ for argument in $arguments; do
 		ShouldNextArgumentBeDate=0
 
 		# We move onto the next arguments
+		continue
+	fi
+
+	if [[ "$ShouldNextArgumentBeLongitude" = 1 ]]; then
+		if ! grep -qE '^[+-]?[0-9]+([.][0-9]+)?$' <<< "$argument"; then
+			echo "Invalid longitude format : ${argument}"
+			exit 1
+		fi
+
+		MinLongitude=$argument
+		ShouldNextArgumentBeLongitude=2
+
+		# We move onto the next arguments
+		continue
+	elif [[ "$ShouldNextArgumentBeLongitude" = 2 ]]; then
+		if ! grep -qE '^[+-]?[0-9]+([.][0-9]+)?$' <<< "$argument"; then
+			echo "Invalid longitude format : ${argument}"
+			exit 1
+		fi
+		
+		MaxLongitude=$argument
+		ShouldNextArgumentBeLongitude=0
+
+		continue
+	fi
+
+	if [[ "$ShouldNextArgumentBeLatitude" = 1 ]]; then
+		if ! grep -qE '^[+-]?[0-9]+([.][0-9]+)?$' <<< "$argument"; then
+			echo "Invalid latitude format : ${argument}"
+			exit 1
+		fi
+
+		MinLatitude=$argument
+		ShouldNextArgumentBeLatitude=2
+
+		# We move onto the next arguments
+		continue
+	elif [[ "$ShouldNextArgumentBeLatitude" = 2 ]]; then
+		if ! grep -qE '^[+-]?[0-9]+([.][0-9]+)?$' <<< "$argument"; then
+			echo "Invalid latitude format : ${argument}"
+			exit 1
+		fi
+		
+		MaxLatitude=$argument
+		ShouldNextArgumentBeLatitude=0
+
 		continue
 	fi
 
@@ -144,7 +191,7 @@ for argument in $arguments; do
 	for location_argument in "${location_arguments[@]}"
 	do
 		if [[ " ${location_argument} " == " ${argument} " ]]; then
-			if [[ ! "$UsedLocationArgument" = "" ]]; then
+			if [[ ! "$UsedLocationArgument" = "" || "$IsLongitudeArgumentSpecified" = true || "$IsLatitudeArgumentSpecified" = true ]]; then
 				echo "Only one location argument can be specified."
 				exit 1
 			fi
@@ -152,6 +199,25 @@ for argument in $arguments; do
 			continue
 		fi
 	done
+
+	# Did the user use the -g argument ?
+	if [[ " -g " == " ${argument} " ]]; then
+		if [[ "$IsLongitudeArgumentSpecified" = true || ! "$UsedLocationArgument" = "" ]]; then
+			echo "Only one location argument can be specified."
+			exit 1
+		fi
+		IsLongitudeArgumentSpecified=true
+		ShouldNextArgumentBeLongitude=1
+	fi
+	# Did the user use the -a argument ?
+	if [[ " -a " == " ${argument} " ]]; then
+		if [[ "$IsLatitudeArgumentSpecified" = true || ! "$UsedLocationArgument" = "" ]]; then
+			echo "Only one location argument can be specified."
+			exit 1
+		fi
+		IsLatitudeArgumentSpecified=true
+		ShouldNextArgumentBeLatitude=1
+	fi
 
 	# Did the user use more than one sorting argument ?
 	for sort_argument in "${sort_arguments[@]}"
@@ -197,7 +263,21 @@ if [[ "$IsDateArgumentSpecified" = true ]]; then
 	fi
 fi
 
+# Longitude checks
+if [[ "$IsLongitudeArgumentSpecified" = true ]]; then
+	if [[ "$MinLongitude" = "" || "$MaxLongitude" = "" ]]; then
+		echo "Error : -g was called, but the longitudes are missing/incomplete."
+		exit 1
+	fi
+fi
 
+# Latitude checks
+if [[ "$IsLatitudeArgumentSpecified" = true ]]; then
+	if [[ "$MinLatitude" = "" || "$MaxLatitude" = "" ]]; then
+		echo "Error : -l was called, but the latitudes are missing/incomplete."
+		exit 1
+	fi
+fi
 
 
 
@@ -340,6 +420,16 @@ if [[ ! "$UsedLocationArgument" = "" ]]; then
 
 	# Code provided by ChatGPT
 	awk -i inplace -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat) && (a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv"
+fi
+
+# Longitude/Latitude
+if [[ "$IsLongitudeArgumentSpecified" = true ]]; then
+	echo "Filtering according to longitude..."
+	awk -i inplace -v MinLong="$MinLongitude" -v MaxLong="$MaxLongitude" -F ';' '{split($10,a,","); if((a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv"
+fi
+if [[ "$IsLatitudeArgumentSpecified" = true ]]; then
+	echo "Filtering according to latitude..."
+	awk -i inplace -v MinLat="$MinLatitude" -v MaxLat="$MaxLatitude" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat)) {print $0}}' "${WorkPath}data.csv"
 fi
 
 # --------------------------------------- DATE FILTERING --------------------------------
@@ -522,7 +612,7 @@ for i in $UsedDataArguments; do
 		;;
 
 
-
+		# ------------------------------ Date; Mean Temperature ------------------------------
 		"-t2")
 		echo "Filtering using t2..."
 
@@ -549,6 +639,7 @@ for i in $UsedDataArguments; do
 			plot '${WorkPath}t2_data.csv' using 1:2 w l;"
 		;;
 
+		# ------------------------------ Date; Mean Pressure ------------------------------
 		"-p2")
 		echo "Filtering using p2..."
 
