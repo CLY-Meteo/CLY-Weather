@@ -470,17 +470,18 @@ for i in $UsedDataArguments; do
 
 		sed -i 's/,/;/g' "${WorkPath}altitude_data.csv"
 		echo "Making the map..."
+		
+		# Code provided by ChatGPT, modified by Jordan.
 		gnuplot -persist -e "reset;
             set datafile separator \";\";
             set title \"Height per station\";
 			set cblabel \"Height (m)\";
 			set xlabel \"Longitude\";
 			set ylabel \"Latitude\";
-			set xrange [-180:180];
-			set yrange [-90:90];
 			set dgrid3d 100,100;
 			set view map;
-			splot '${WorkPath}altitude_data.csv' u 4:3:2 w pm3d lw 6 palette;"
+			splot [-180:180][-90:90] '${WorkPath}altitude_data.csv' u 4:3:2 w pm3d lw 6 palette;"
+		# ------------------------
 		;;
 
 
@@ -495,7 +496,7 @@ for i in $UsedDataArguments; do
 		# Humidity
 		echo "Filtering according to maximum humidity per station..."
 
-		# Code provided by ChatGPT
+		# Code provided by ChatGPT, modified by Jordan.
 		awk -F ";" '{
 			if ($1 in max_humidity) { 
 				if ($6 > max_humidity[$1]) {
@@ -511,6 +512,7 @@ for i in $UsedDataArguments; do
 					print max_humidity[id] ";" id ";" coordinates[id]
 				}
 			}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
+		# ------------------------------------------------
 		./cly-meteo-sorting -f "${WorkPath}humidity_filtered_data_unsorted.csv" -o "${WorkPath}humidity_data.csv" -r
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_data.csv"
 		#rm "${WorkPath}humidity_filtered_data_unsorted.csv"
@@ -523,11 +525,9 @@ for i in $UsedDataArguments; do
 			set cblabel \"Maximum humidity (%)\";
 			set xlabel \"Longitude\";
 			set ylabel \"Latitude\";
-			set xrange [-180:180];
-			set yrange [-90:90];
 			set dgrid3d 100,100;
 			set view map;
-			splot '${WorkPath}humidity_data.csv' u 4:3:2 w pm3d lw 6 palette;"
+			splot [-180:180][-90:90] '${WorkPath}humidity_data.csv' u 4:3:2 w pm3d lw 6 palette;"
 		;;
 
 
@@ -538,7 +538,30 @@ for i in $UsedDataArguments; do
 		"-w")
 		# ------------------------------ Wind ------------------------------
 		echo "Filtering according to wind per station..."
-		echo "This is not implemented yet."
+		awk -F ";" '{
+			x_axis_sum[$1]+=$4*cos($5);
+			y_axis_sum[$1]+=$4*sin($5);
+			count[$1]++;
+			coordinates[$1] = $10
+		} END {
+			for (i in count) {
+				print i ";" x_axis_sum[i]/count[i] ";" y_axis_sum[i]/count[i] ";" coordinates[i]
+			}
+		}' "${WorkPath}data.csv" > "${WorkPath}wind_filtered_data_unsorted.csv"
+		./cly-meteo-sorting -f "${WorkPath}wind_filtered_data_unsorted.csv" -o "${WorkPath}wind_data.csv"
+		#rm "${WorkPath}wind_filtered_data_unsorted.csv"
+
+		sed -i 's/,/;/g' "${WorkPath}wind_data.csv"
+
+		echo "Making the map..."
+		gnuplot -persist -e "reset;
+			set datafile separator \";\";
+			set title \"Wind per station\";
+			set cblabel \"Wind speed (m/s)\";
+			set xlabel 'X Coordinate';
+			set ylabel 'Y Coordinate';
+			set key off;
+			plot [-180:180][-90:90] '${WorkPath}wind_data.csv' using 5:4:2:3 with vectors lw 2;"
 		;;
 
 
