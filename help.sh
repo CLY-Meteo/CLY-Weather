@@ -16,17 +16,17 @@ Pressure : -p1, -p2, -p3
 	-p3 : Produces a graph of the pressures per day/hour for each station.
 
 Wind :
-	-w : Produces a graph of the average wind orientation and speed for each station.
+	-w : Produces a vector map of the average wind orientation and speed for each station.
 
 Altitude :
-	-h : Produces a graph of the altitude for each station.
+	-h : Produces a map of the altitude for each station.
 
 Humidity :
-	-m : Produces a graph of the maximum humidity for each station.
+	-m : Produces a map of the maximum humidity for each station.
 
 -- Location options --
 Note : Only one location can be specified at a time.
-	-F : France
+	-F : France & Corse
 	-G : Guyane
 	-S : Saint-Pierre et Miquelon
 	-A : Antilles
@@ -38,14 +38,13 @@ Note : Only one location can be specified at a time.
 
 -- Date --
 Note : Only one date interval can be specified at a time.
-	-d <start> <end> : Date filtering.
+	-d <start> <end> : Date filtering. Expects the format YYYY-MM-DD.
 
 -- Sorting algorithm --
 Note : Only one sorting can be specified at a time.
 	--avl : Sorts the data using an AVL tree. (Default)
 	--abr : Sorts the data using an ABR tree.
 	--tab : Sorts the data using a table.
-	-r : Reverses the sorting order. Can be paired with -s.
 
 --help : Displays this help page."
 
