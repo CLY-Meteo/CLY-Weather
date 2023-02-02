@@ -10,7 +10,7 @@
 // Used for sleep, needed to look at memory usage
 #include <unistd.h>
 
-#include "cly-meteo-headers.h"
+#include "cly-weather-headers.h"
 
 typedef enum sort_algorithm {
 	Unspecified = 0,

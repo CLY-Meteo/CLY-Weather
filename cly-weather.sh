@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # ------------ Dev Settings ------------
-declare -r Debug=true
-declare -r WorkPath="/tmp/cly-meteo/"
+declare -r WorkPath="/tmp/cly-weather/"
 
 # SHOULD BE OFF ON RELEASE
 declare -r DisableCleaning=true
@@ -294,12 +293,12 @@ fi
 
 # ------------------------ Check for dependencies ------------------------
 if [[ "$AlwaysRebuild" = true ]]; then
-	rm -f "$ScriptDirectory/cly-meteo-sorting"
+	rm -f "$ScriptDirectory/cly-weather-sorting"
 fi
 
-# We need to see if the executable cly-meteo-sorting exists at the root.
-if [[ ! -f "$ScriptDirectory/cly-meteo-sorting" ]]; then
-	echo "WARNING : cly-meteo-sorting is missing !"
+# We need to see if the executable cly-weather-sorting exists at the root.
+if [[ ! -f "$ScriptDirectory/cly-weather-sorting" ]]; then
+	echo "WARNING : cly-weather-sorting is missing !"
 	# We check if gcc and make are installed.
 	if [[ ! $(type -P gcc) ]]; then
 		echo "gcc is not installed. Can't proceed."
@@ -313,17 +312,17 @@ if [[ ! -f "$ScriptDirectory/cly-meteo-sorting" ]]; then
 	backup_pwd=$(pwd)
 	cd "$ScriptDirectory/c_source"
 
-	echo "Compiling cly-meteo-sorting with make..."
+	echo "Compiling cly-weather-sorting with make..."
 	echo "------------ Make output ------------"
 	make
 	if [[ $? -ne 0 ]]; then
 		echo "------------ End of make output ------------"
-		echo "cly-meteo couldn't compile the executable. Exiting..."
+		echo "cly-weather couldn't compile the executable. Exiting..."
 		exit 4
 	fi
 	echo "------------ End of make output ------------"
 
-	mv cly-meteo-sorting ../cly-meteo-sorting
+	mv cly-weather-sorting ../cly-weather-sorting
 	cd "$backup_pwd"
 fi
 
@@ -337,7 +336,7 @@ if [[ ! $(type -P awk) ]]; then
 fi
 
 # -------------------------------------- File Checks --------------------------------------
-if ! [ -e $FilePath -a -r $FilePath ]; then
+if ! [ -e "$FilePath" -a -r "$FilePath" ]; then
 	echo "The file $FilePath does not exist or is not readable."
 	exit 1
 fi
@@ -455,16 +454,18 @@ fi
 
 
 # --------------------------------------- DATA FILTERING --------------------------------
-# Define function for sorting using cly-meteo-sorting, with arguments for the source file, the output file and the reverse option.
+# Define function for sorting using cly-weather-sorting, with arguments for the source file, the output file and the reverse option.
 # This function is used for all the data filtering.
 function sort_data {
-	./cly-meteo-sorting -f "$1" -o "$2" $3 $UsedSortArgument
+	./cly-weather-sorting -f "$1" -o "$2" $3 $UsedSortArgument
 	if [[ $? -ne 0 ]]; then
 		echo "Error while sorting data. Exiting."
 		exit 4
 	fi
 
-	rm "$1"
+	if [[ $DisableCleaning = false ]]; then
+		rm "$1"
+	fi
 }
 
 for i in $UsedDataArguments; do
@@ -739,7 +740,7 @@ done
 
 # --------------------------- Final cleaning -----------------
 if [[ $DisableCleaning = false ]]; then
-	rm -rf /tmp/cly-meteo
+	rm -rf /tmp/cly-weather
 fi
 
 exit 0

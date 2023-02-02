@@ -1,6 +1,6 @@
 list="\
-CLY-Meteo (CLI + CY-Meteo) is a Bash script + C program that sorts weather data into various graphs, using gnuplot.
-Usage: ./cly-meteo.sh -f SOURCE_FILE DATA_TYPE [OPTIONS]
+CLY-Weather (CLI + CY-Meteo) is a Bash script + C program that sorts weather data into various graphs, using gnuplot.
+Usage: ./cly-weather.sh -f SOURCE_FILE DATA_TYPE [OPTIONS]
 
 --- Data type options ---
 Note : You can use multiple types at the same time.

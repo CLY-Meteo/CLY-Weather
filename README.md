@@ -2,23 +2,23 @@
 
 ---
 
-# CLY-Meteo *(CLI + CY-Météo)*
+# CLY-Weather *(CLI + CY-Météo)*
 
-![License](https://img.shields.io/github/license/CLY-Meteo/CLY-Meteo?color=orange)
-![Top language](https://img.shields.io/github/languages/top/CLY-Meteo/CLY-Meteo?color=grey)
-![Commit activity](https://img.shields.io/github/commit-activity/m/CLY-Meteo/CLY-Meteo?color=red)
-![Repo size](https://img.shields.io/github/repo-size/CLY-Meteo/CLY-Meteo)
+![License](https://img.shields.io/github/license/CLY-Weather/CLY-Weather?color=orange)
+![Top language](https://img.shields.io/github/languages/top/CLY-Weather/CLY-Weather?color=grey)
+![Commit activity](https://img.shields.io/github/commit-activity/m/CLY-Weather/CLY-Weather?color=red)
+![Repo size](https://img.shields.io/github/repo-size/CLY-Weather/CLY-Weather)
 
-CLY-Meteo (CLI + CY-Météo) is a Bash script + C program that translates weather data into various graphs, using gnuplot.
+CLY-Weather (CLI + CY-Météo) is a Bash script + C program that translates weather data into various graphs, using gnuplot.
 
 # Summary
 
-- [Using CLY-Meteo](#How-to-use-CLY-Meteo-)
+- [Using CLY-Weather](#How-to-use-CLY-Weather-)
 	- [Dependencies](#Dependencies)
 	- [Basic syntax](#Basic-syntax-)
-- [Compiling CLY-Meteo](#How-to-compile-CLY-Meteo-s-C-program-)
+- [Compiling CLY-Weather](#How-to-compile-CLY-Weather-s-C-program-)
 
-# How to use CLY-Meteo ?
+# How to use CLY-Weather ?
 
 ## Dependencies
 
@@ -30,16 +30,16 @@ CLY-Meteo (CLI + CY-Météo) is a Bash script + C program that translates weathe
 - gnuplot
 
 ## Basic syntax
-You can use CLY-Meteo through this command, from the root folder of the project. 
+You can use CLY-Weather through this command, from the root folder of the project. 
 ```bash
-./cly-meteo.sh -f SOURCE_FILE DATA_TYPE [OPTIONS]
+./cly-weather.sh -f SOURCE_FILE DATA_TYPE [OPTIONS]
 ```
 
 The expected source file is a CSV file, containing weather data organized like this :
 ```
 Station ID;Date;Sea level pressure;Average wind direction 10 nm;Average wind speed 10 nm;Humidity;Station pressure;Pressure variation in 24 hours;Precipitation in the last 24 hours;Coordinates;Temperature (°C );Minimum temperature over 24 hours (°C);Maximum temperature over 24 hours (°C);Altitude;municipalities (code)
 ```
-In order to successfully run, CLY-Meteo needs at least one data type argument. If all goes well, you should be awarded with as many graphs as data types entered as arguments : one graph per argument.
+In order to successfully run, CLY-Weather needs at least one data type argument. If all goes well, you should be awarded with as many graphs as data types entered as arguments : one graph per argument.
 
 ## Data Type options 
 ### Temperature : (-t1, -t2, -t3)
@@ -88,7 +88,7 @@ In order to successfully run, CLY-Meteo needs at least one data type argument. I
 
 Additionally, the ```--help``` argument will displays the program's help page.
 
-# How to **compile** CLY-Meteo's C program ?
+# How to **compile** CLY-Weather's C program ?
 
 **From the root folder of the project...**
 
@@ -96,4 +96,4 @@ Additionally, the ```--help``` argument will displays the program's help page.
 - Run ```make```
 - Enjoy.
 
-*(If you want cly-meteo.sh to use your compiled binary, move the binary back to the root folder of the project.)*
+*(If you want cly-weather.sh to use your compiled binary, move the binary back to the root folder of the project.)*

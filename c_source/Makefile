@@ -1,5 +1,5 @@
 CC=gcc
-EXECUTABLE_NAME=cly-meteo-sorting
+EXECUTABLE_NAME=cly-weather-sorting
 
 # Optional (use root if empty)
 BUILD_FOLDER=
