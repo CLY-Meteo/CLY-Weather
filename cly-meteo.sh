@@ -697,10 +697,10 @@ for i in $UsedDataArguments; do
 		echo "Filtering using t3..."
 		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv" --tab
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv"
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv" --tab
+		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv"
 		echo "Soon done..."
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted2.csv"
 		;;
@@ -709,10 +709,10 @@ for i in $UsedDataArguments; do
 		echo "Filtering using p3..."
 		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv" --tab
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv"
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv" --tab
+		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv"
 		echo "Soon done..."
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted2.csv"
 		;;
