@@ -316,7 +316,7 @@ if [[ ! -f "$ScriptDirectory/cly-meteo-sorting" ]]; then
 	echo "Compiling cly-meteo-sorting with make..."
 	echo "------------ Make output ------------"
 	make
-	if [[ ! $? = 0 ]]; then
+	if [[ $? -ne 0 ]]; then
 		echo "------------ End of make output ------------"
 		echo "cly-meteo couldn't compile the executable. Exiting..."
 		exit 4
@@ -455,6 +455,18 @@ fi
 
 
 # --------------------------------------- DATA FILTERING --------------------------------
+# Define function for sorting using cly-meteo-sorting, with arguments for the source file, the output file and the reverse option.
+# This function is used for all the data filtering.
+function sort_data {
+	./cly-meteo-sorting -f "$1" -o "$2" $3 $UsedSortArgument
+	if [[ $? -ne 0 ]]; then
+		echo "Error while sorting data. Exiting."
+		exit 4
+	fi
+
+	rm "$1"
+}
+
 for i in $UsedDataArguments; do
 	case $i in
 		# ------------------------------ Altitude ------------------------------
@@ -464,9 +476,8 @@ for i in $UsedDataArguments; do
 		# Code provided by ChatGPT
 		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
 		# ------------------------
-		./cly-meteo-sorting -f "${WorkPath}altitude_filtered_data_unsorted.csv" -o "${WorkPath}altitude_data.csv" -r
+		sort_data "${WorkPath}altitude_filtered_data_unsorted.csv" "${WorkPath}altitude_data.csv" -r
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}altitude_data.csv"
-		#rm "${WorkPath}altitude_filtered_data_unsorted.csv"
 
 		sed -i 's/,/;/g' "${WorkPath}altitude_data.csv"
 		echo "Making the map..."
@@ -513,9 +524,8 @@ for i in $UsedDataArguments; do
 				}
 			}' "${WorkPath}data.csv" > "${WorkPath}humidity_filtered_data_unsorted.csv"
 		# ------------------------------------------------
-		./cly-meteo-sorting -f "${WorkPath}humidity_filtered_data_unsorted.csv" -o "${WorkPath}humidity_data.csv" -r
+		sort_data "${WorkPath}humidity_filtered_data_unsorted.csv" "${WorkPath}humidity_data.csv" -r
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}humidity_data.csv"
-		#rm "${WorkPath}humidity_filtered_data_unsorted.csv"
 
 		sed -i 's/,/;/g' "${WorkPath}humidity_data.csv"
 		echo "Making the map..."
@@ -548,8 +558,7 @@ for i in $UsedDataArguments; do
 				print i ";" x_axis_sum[i]/count[i] ";" y_axis_sum[i]/count[i] ";" coordinates[i]
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}wind_filtered_data_unsorted.csv"
-		./cly-meteo-sorting -f "${WorkPath}wind_filtered_data_unsorted.csv" -o "${WorkPath}wind_data.csv"
-		#rm "${WorkPath}wind_filtered_data_unsorted.csv"
+		sort_data "${WorkPath}wind_filtered_data_unsorted.csv" "${WorkPath}wind_data.csv"
 
 		sed -i 's/,/;/g' "${WorkPath}wind_data.csv"
 
@@ -584,8 +593,7 @@ for i in $UsedDataArguments; do
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}t1_filtered_data_unsorted.csv"
 		# -------------------------------------------
-		./cly-meteo-sorting -f "${WorkPath}t1_filtered_data_unsorted.csv" -o "${WorkPath}t1_filtered_data_sorted.csv"
-		#rm "${WorkPath}t1_filtered_data_unsorted.csv"
+		sort_data "${WorkPath}t1_filtered_data_unsorted.csv" "${WorkPath}t1_data.csv"
 
 		gnuplot -persist -e "reset;set datafile separator \";\";
 			set title \"Temperature statistics by station\";
@@ -596,9 +604,9 @@ for i in $UsedDataArguments; do
 			set style data linespoints;
 			set style fill solid 0.5;
 			set boxwidth 0.5;
-			plot '${WorkPath}t1_filtered_data_sorted.csv' using 1:3:2:4 with yerrorbars title \"Mean\";
-			replot '${WorkPath}t1_filtered_data_sorted.csv' using 1:2 with points title \"Minimum\";
-			replot '${WorkPath}t1_filtered_data_sorted.csv' using 1:4 with points title \"Maximum\";"
+			plot '${WorkPath}t1_data.csv' using 1:3:2:4 with yerrorbars title \"Mean\";
+			replot '${WorkPath}t1_data.csv' using 1:2 with points title \"Minimum\";
+			replot '${WorkPath}t1_data.csv' using 1:4 with points title \"Maximum\";"
 		;;
 
 		# ------------------------------ Station ID; Minimum Pressure; Mean Pressure; Maximum Pressure ------------------------------
@@ -617,8 +625,7 @@ for i in $UsedDataArguments; do
 			}
 		}' "${WorkPath}data.csv" > "${WorkPath}p1_filtered_data_unsorted.csv"
 		# -------------------------------------------
-		./cly-meteo-sorting -f "${WorkPath}p1_filtered_data_unsorted.csv" -o "${WorkPath}p1_data.csv"
-		#rm "${WorkPath}p1_filtered_data_unsorted.csv"
+		sort_data "${WorkPath}p1_filtered_data_unsorted.csv" "${WorkPath}p1_data.csv"
 
 		gnuplot -persist -e "reset;set datafile separator \";\";
 			set title \"Pressure statistics by station\";
@@ -649,8 +656,7 @@ for i in $UsedDataArguments; do
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}t2_filtered_data_unsorted.csv"
 		# -------------------------------------------
-		./cly-meteo-sorting -f "${WorkPath}t2_filtered_data_unsorted.csv" -o "${WorkPath}t2_data.csv"
-		#rm "${WorkPath}t2_filtered_data_unsorted.csv"
+		sort_data "${WorkPath}t2_filtered_data_unsorted.csv" "${WorkPath}t2_data.csv"
 
 		gnuplot -persist -e "reset;
 			set title 'Mean temperature over time';
@@ -676,8 +682,7 @@ for i in $UsedDataArguments; do
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}p2_filtered_data_unsorted.csv"
 		# -------------------------------------------
-		./cly-meteo-sorting -f "${WorkPath}p2_filtered_data_unsorted.csv" -o "${WorkPath}p2_data.csv"
-		#rm "${WorkPath}p2_filtered_data_unsorted.csv"
+		sort_data "${WorkPath}p2_filtered_data_unsorted.csv" "${WorkPath}p2_data.csv"
 
 		gnuplot -persist -e "reset;
 			set title 'Mean pressure over time';
@@ -697,24 +702,24 @@ for i in $UsedDataArguments; do
 		echo "Filtering using t3..."
 		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_unsorted.csv" -o "${WorkPath}t3_filtered_data_sorted1.csv"
+		sort_data "${WorkPath}t3_filtered_data_unsorted.csv" "${WorkPath}t3_filtered_data_sorted1.csv"
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}t3_filtered_data_sorted1.csv" -o "${WorkPath}t3_filtered_data_sorted2.csv"
+		sort_data "${WorkPath}t3_filtered_data_sorted1.csv" "${WorkPath}t3_data.csv"
 		echo "Soon done..."
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted2.csv"
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_data.csv"
 		;;
 
 		"-p3")
 		echo "Filtering using p3..."
 		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_unsorted.csv" -o "${WorkPath}p3_filtered_data_sorted1.csv"
+		sort_data "${WorkPath}p3_filtered_data_unsorted.csv" "${WorkPath}p3_filtered_data_sorted1.csv"
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted1.csv"
 		echo "Still going..."
-		./cly-meteo-sorting -f "${WorkPath}p3_filtered_data_sorted1.csv" -o "${WorkPath}p3_filtered_data_sorted2.csv"
+		sort_data "${WorkPath}p3_filtered_data_sorted1.csv" "${WorkPath}p3_data.csv"
 		echo "Soon done..."
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted2.csv"
+		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_data.csv"
 		;;
 
 		"*")
