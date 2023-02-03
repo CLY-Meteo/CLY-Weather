@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<ctype.h>
 
 #include "cly-weather-headers.h"
 
@@ -34,7 +35,7 @@ pABRNode insertInABR(pABRNode tree, long Value, char * Data){
 // Used for debugging, this function will show the ABR tree's values used for sorting in prefix order.
 void showABRPrefix(pABRNode tree){
 	if(tree != NULL){
-		printf("%d ", tree->Value);
+		printf("%ld ", tree->Value);
 		showABRPrefix(tree->leftNode);
 		showABRPrefix(tree->rightNode);
 	} else {
@@ -77,7 +78,7 @@ void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool useReverse){
 			writeABRTreeDataToFile(tree->leftNode, outputFile, useReverse);
 
 			//Workaround for an unknown bug where the last character of random strings is 1 instead of \0.
-			if(tree->Data[strlen(tree->Data)-1] == '1'){
+			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
 
@@ -87,7 +88,7 @@ void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool useReverse){
 			writeABRTreeDataToFile(tree->rightNode, outputFile, useReverse);
 			
 			//Workaround
-			if(tree->Data[strlen(tree->Data)-1] == '1'){
+			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
 

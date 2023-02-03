@@ -20,7 +20,7 @@ typedef enum sort_algorithm {
 } sort_algorithm;
 
 bool testArgument(char * argument, char * argumentExpected){
-	for (int i = 0; i < strlen(argumentExpected); i++){
+	for (int i = 0; i < (int)strlen(argumentExpected); i++){
 		if (argument[i] != argumentExpected[i]){
 			return false;
 		}
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
 	//We prepare the storage method for the data
 	pAVLNode fileAVLTree = NULL;
 	pABRNode fileABRTree = NULL;
-	tabList * fileTab = NULL;
+	chainedList * fileList = NULL;
 
 	while ((getline(&line, &len, inputFile)) != -1) {
 		char * lineBackup = NULL;
@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
 				fileABRTree = insertInABR(fileABRTree, stringConvertedIntoNumber, lineBackup);
 				break;
 			case TAB:
-				//
+				fileList = insertInChainedList(fileList, stringConvertedIntoNumber, lineBackup);
 				break;
 			default:
 				printf("Error: sorting algorithm not specified.\n");
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
 			writeABRTreeDataToFile(fileABRTree, outputFile, useReverseMode);
 			break;
 		case TAB:
-			//
+			writeChainedListData(fileList, outputFile, useReverseMode);
 			break;
 		default:
 			printf("Error: sorting algorithm not specified.\n");

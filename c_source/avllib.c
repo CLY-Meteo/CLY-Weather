@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<ctype.h>
 
 #include "cly-weather-headers.h"
 
@@ -151,7 +152,7 @@ void wipeAVL(pAVLNode tree) {
 // Debug functions used to show the contents of the AVL tree.
 void showAVLPrefix(pAVLNode tree) {
 	if(tree != NULL) {
-		printf("%f ", tree->Value);
+		printf("%ld ", tree->Value);
 		showAVLPrefix(tree->leftNode);
 		showAVLPrefix(tree->rightNode);
 	} else {
@@ -173,7 +174,7 @@ void writeAVLTreeDataToFile(pAVLNode tree, FILE * outputFile, bool useReverse){
 			writeAVLTreeDataToFile(tree->leftNode, outputFile, useReverse);
 
 			//Workaround for an unknown bug where the last character of random strings is 1 instead of \0.
-			if(tree->Data[strlen(tree->Data)-1] == '1'){
+			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
 			fprintf(outputFile, "%s", tree->Data);
@@ -183,7 +184,7 @@ void writeAVLTreeDataToFile(pAVLNode tree, FILE * outputFile, bool useReverse){
 			writeAVLTreeDataToFile(tree->rightNode, outputFile, useReverse);
 
 			//Workaround
-			if(tree->Data[strlen(tree->Data)-1] == '1'){
+			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
 

@@ -27,19 +27,18 @@ void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool isReverse);
 
 
 //------------------------------------ Tab
-typedef struct tabEntry {
+typedef struct chainedList {
 	long Value;
 	char *Data;
-} tabEntry;
+	struct chainedList *nextNode;
+	struct chainedList *previousNode;
+} chainedList;
 
-typedef tabEntry *pTabEntry;
+typedef chainedList *pChainedList; 
 
-typedef struct tabList {
-	pTabEntry tab;
-	int size;
-	int max;
-} tabList;
-
+pChainedList createChainedList(long Value, char * Data);
+pChainedList insertInChainedList(pChainedList list, long Value, char * Data);
+void writeChainedListData(pChainedList node, FILE * output, bool useReverseMode);
 
 
 
