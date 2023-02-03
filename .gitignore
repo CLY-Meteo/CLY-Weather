@@ -68,3 +68,6 @@ cly-meteo-sorting
 
 # GNUPlot
 *.png
+
+# Examples
+!examples/**
