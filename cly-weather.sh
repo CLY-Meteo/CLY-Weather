@@ -4,8 +4,8 @@
 declare -r WorkPath="/tmp/cly-weather/"
 
 # SHOULD BE OFF ON RELEASE
-declare -r DisableCleaning=true
-declare -r AlwaysRebuild=true
+declare -r DisableCleaning=false
+declare -r AlwaysRebuild=false
 
 # ------------ Constants ------------
 declare -r argument_count=$#
@@ -37,7 +37,6 @@ ShouldNextArgumentBeDate=0
 MinDate=""
 MaxDate=""
 
-# Unused right now.
 IsLongitudeArgumentSpecified=false
 ShouldNextArgumentBeLongitude=0
 MinLongitude=""
@@ -68,7 +67,7 @@ for argument in $arguments; do
 	fi
 
 	if [[ "$ShouldNextArgumentBeDate" = 1 ]]; then
-		# My brain overheated there...
+		# We verify the format.
 		if ! grep -qE '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$' <<< "$argument"; then
 			echo "Invalid date format : ${argument}"
 			exit 1
@@ -93,6 +92,7 @@ for argument in $arguments; do
 	fi
 
 	if [[ "$ShouldNextArgumentBeLongitude" = 1 ]]; then
+		# We verify the format.
 		if ! grep -qE '^[+-]?[0-9]+([.][0-9]+)?$' <<< "$argument"; then
 			echo "Invalid longitude format : ${argument}"
 			exit 1
@@ -360,7 +360,7 @@ fi
 
 # ------------------------------------------------------------------------------------------
 # We get the file in the path and copy it to the work location. After creating it, if necessary.
-# Depending on the distro, this could be in the RAM and take a lot of memory. Thus, IT IS IMPORTANT TO CLEAN WHEN WE'RE DONE.
+# Depending on the distribution, this could be in the RAM and take a lot of memory. Thus, IT IS IMPORTANT TO CLEAN WHEN WE'RE DONE.
 mkdir -p $WorkPath
 echo "Hold on..."
 cp -f "$FilePath" "${WorkPath}data.csv"
@@ -369,9 +369,7 @@ cp -f "$FilePath" "${WorkPath}data.csv"
 sed -i '1d' "${WorkPath}data.csv"
 
 # --------------------------------------- LOCATION FILTERING --------------------------------
-# I'll have to remember to check if the coordinates are correct.
-# Something was off with the file though. It didn't have the empty IDs.
-
+# We filter the data to the specified location.
 if [[ ! "$UsedLocationArgument" = "" ]]; then
 	case $UsedLocationArgument in
 		"-F")
@@ -417,7 +415,7 @@ if [[ ! "$UsedLocationArgument" = "" ]]; then
 		;;
 	esac
 
-	# Code provided by ChatGPT
+	# Code provided by ChatGPT as an example of awk usage for Jordan. Modified by Jordan.
 	awk -i inplace -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>=MinLat && a[1]<=MaxLat) && (a[2]>=MinLong && a[2]<=MaxLong)) {print $0}}' "${WorkPath}data.csv"
 fi
 
@@ -435,7 +433,7 @@ fi
 if [[ "$IsDateArgumentSpecified" = true ]]; then
 	echo "Filtering dates..."
 
-	# ChatGPT
+	# Code provided by ChatGPT, as an example of awk usage for Jordan. Modified by Jordan.
 	awk -i inplace -v MinDate="$MinDate" -v MaxDate="$MaxDate" -F ";" '$2 >= MinDate && $2 <= MaxDate {print $0}' "${WorkPath}data.csv"
 fi
 
@@ -455,7 +453,7 @@ fi
 
 # --------------------------------------- DATA FILTERING --------------------------------
 # Function used for sorting with cly-weather-sorting, with arguments for the source file, the output file and the reverse option.
-# This function is used for by all the data filtering methods.
+# This function is used by all of the data filtering methods.
 function sort_data {
 	./cly-weather-sorting -f "$1" -o "$2" $3 $UsedSortArgument
 	if [[ $? -ne 0 ]]; then
@@ -502,7 +500,7 @@ for i in $UsedDataArguments; do
 		"-h")
 		echo "Filtering according to altitude per station..."
 
-		# Code provided by ChatGPT
+		# Code provided by ChatGPT, as an example of awk usage for Jordan. Modified by Jordan.
 		awk -F ";" '!seen[$1]++ {print $14 ";" $1 ";" $10}' "${WorkPath}data.csv" > "${WorkPath}altitude_filtered_data_unsorted.csv"
 		# ------------------------
 		sort_data "${WorkPath}altitude_filtered_data_unsorted.csv" "${WorkPath}altitude_data.csv" -r
@@ -741,7 +739,7 @@ for i in $UsedDataArguments; do
 		echo "Still going..."
 		sort_data "${WorkPath}t3_filtered_data_sorted1.csv" "${WorkPath}t3_data.csv"
 
-		# The format required by the exercise is different from the format we're using for gnuplot.
+		# The format required by the instructions is different from the format we're using for gnuplot.
 		# We need to reorganize the data, in order to use it with gnuplot.
 
 		echo "Preparing for gnuplot..."
@@ -769,6 +767,7 @@ for i in $UsedDataArguments; do
 		echo "Warning ! This may take a while..."
 
 		# Workaround for an unknown malloc(): invalid next size (unsorted) bug within cly-weather-sorting.
+		# Seems to happen when the input file has lines too long.
 		awk -i inplace -F';' '{printf("%s;%s;%.3f\n", $1, $2, $3)}' "${WorkPath}p3_filtered_data_unsorted.csv"
 
 		sort_data "${WorkPath}p3_filtered_data_unsorted.csv" "${WorkPath}p3_filtered_data_sorted1.csv"

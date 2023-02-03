@@ -7,11 +7,12 @@
 #define __USE_XOPEN
 #include <time.h>
 
-// Used for sleep, needed to look at memory usage
+// Used for sleep, needed to look at memory usage during development.
 #include <unistd.h>
 
 #include "cly-weather-headers.h"
 
+//This enum is used to specify the sorting algorithm to use.
 typedef enum sort_algorithm {
 	Unspecified = 0,
 	AVL = 1,
@@ -19,6 +20,7 @@ typedef enum sort_algorithm {
 	TAB = 3
 } sort_algorithm;
 
+//Function to test if an argument is the same as the expected argument.
 bool testArgument(char * argument, char * argumentExpected){
 	for (int i = 0; i < (int)strlen(argumentExpected); i++){
 		if (argument[i] != argumentExpected[i]){
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]) {
 
 
 
-	
+	//We open the input file.
 	FILE * inputFile = fopen(inputFilePath, "r");
 	if (inputFile == NULL){
 		printf("Error: input file unreadable.\n");
@@ -141,12 +143,13 @@ int main(int argc, char *argv[]) {
     size_t len = 0;
 	int h = 0;
 
-	//We prepare the storage method for the data
+	//We prepare the storage methods for the data
 	pAVLNode fileAVLTree = NULL;
 	pABRNode fileABRTree = NULL;
 	chainedList * fileList = NULL;
 
 	while ((getline(&line, &len, inputFile)) != -1) {
+		//strtok damages the original string. We need a backup.
 		char * lineBackup = NULL;
 		lineBackup = malloc(sizeof(char) * strlen(line));
 		if(lineBackup == NULL){
@@ -160,7 +163,7 @@ int main(int argc, char *argv[]) {
 
 		strcpy(lineBackup, line);
 
-		//This is for the hours, which aren't fully numeric.
+		//This is for the hours, which aren't fully numeric. We convert them to unix time.
 		long int stringConvertedIntoNumber;
 		if(firstInfoInLine[4] == '-'){
 			struct tm tm = {0};
@@ -173,7 +176,7 @@ int main(int argc, char *argv[]) {
 			stringConvertedIntoNumber = atoi(firstInfoInLine);
 		}
 
-		//We add the data to the storage method
+		//We add the data depending on the chosen storage method.
 		switch (sortingAlgorithm){
 			case AVL:
 				fileAVLTree = insertInAVL(fileAVLTree, stringConvertedIntoNumber, &h, lineBackup);
@@ -239,12 +242,11 @@ int main(int argc, char *argv[]) {
 			exit(1);
 	}
 
-	//I would wipe properly the memory, but this is broken because of the workaround for lines ending with 1 instead of /0.
+	//I would wipe properly the memory, but this is broken because of the workaround for lines ending improperly.
 	//wipeAVL(fileAVLTree);
 	//wipeABR(fileABRTree);
-	//Oh well, the memory is wiped by the OS right after anyways.
+	//The memory is wiped by the OS right after anyways.
 
-	//Insert here for tabs
 	fclose(outputFile);
 
     return 0;

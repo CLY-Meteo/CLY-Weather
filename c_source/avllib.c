@@ -7,7 +7,7 @@
 #include "cly-weather-headers.h"
 
 // ------------------------------- AVL Modification -------------------------------
-// This function will insert a new node into an AVL tree pointer.
+// This function will create a new node and give it to an AVL tree pointer.
 pAVLNode createAVLTree(long Value, char * Data) {
 	pAVLNode tree = NULL;
 	tree = malloc((int)sizeof(AVLNode) + 20);
@@ -42,7 +42,6 @@ pAVLNode leftRotation(pAVLNode tree) {
 	return pivot;
 }
 
-// This function is part of the AVL tree's balancing algorithm.
 pAVLNode rightRotation(pAVLNode tree) {
 	if(tree->leftNode == NULL) {
 		return tree;
@@ -173,7 +172,7 @@ void writeAVLTreeDataToFile(pAVLNode tree, FILE * outputFile, bool useReverse){
 		if(!useReverse){
 			writeAVLTreeDataToFile(tree->leftNode, outputFile, useReverse);
 
-			//Workaround for an unknown bug where the last character of random strings is 1 instead of \0.
+			//Workaround for an unknown bug where the last character of some strings is not \0.
 			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}

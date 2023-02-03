@@ -7,6 +7,7 @@
 #include "cly-weather-headers.h"
 
 // ------------------------------- Chained List Modification -------------------------------
+// This function will create a new chained list node.
 pChainedList createChainedList(long Value, char * Data){
 	pChainedList newChainedList = NULL;
 	newChainedList = malloc(sizeof(chainedList));
@@ -21,7 +22,7 @@ pChainedList createChainedList(long Value, char * Data){
 	return newChainedList;
 }
 
-//We insert in the chained list according to the order of the values.
+// This function will insert a new node into a chained list.
 pChainedList insertInChainedList(pChainedList list, long Value, char * Data){
 	pChainedList newChainedList = NULL;
 	newChainedList = createChainedList(Value, Data);
@@ -63,6 +64,7 @@ void showChainedListData(pChainedList list){
 	}
 }
 
+// This function will write the chained list's data in the output file.
 void writeChainedListData(pChainedList node, FILE * output, bool useReverseMode){
 	if(node != NULL){
 		//Workaround

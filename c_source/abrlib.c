@@ -77,7 +77,7 @@ void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool useReverse){
 		if(!useReverse){
 			writeABRTreeDataToFile(tree->leftNode, outputFile, useReverse);
 
-			//Workaround for an unknown bug where the last character of random strings is 1 instead of \0.
+			//Workaround for an unknown bug where the last character of random strings is not \0.
 			if(isalpha(tree->Data[strlen(tree->Data)-1]) || isdigit(tree->Data[strlen(tree->Data)-1])){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
