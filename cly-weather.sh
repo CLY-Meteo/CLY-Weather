@@ -383,13 +383,13 @@ if [[ ! "$UsedLocationArgument" = "" ]]; then
 		"-G")
 		# Guyane Française
 		echo "Filtering to French Guiana only..."
-		MinLat=-3 ; MaxLat=5 ; MinLong=-54 ; MaxLong=-51
+		MinLat=-4 ; MaxLat=6 ; MinLong=-55 ; MaxLong=-50
 		;;
 
 		"-S")
 		# Saint-Pierre et Miquelon
 		echo "Filtering to Saint-Pierre et Miquelon only..."
-		MinLat=46 ; MaxLat=47 ; MinLong=-56 ; MaxLong=-55
+		MinLat=45 ; MaxLat=48 ; MinLong=-58 ; MaxLong=-53
 		;;
 
 		"-A")
@@ -418,7 +418,7 @@ if [[ ! "$UsedLocationArgument" = "" ]]; then
 	esac
 
 	# Code provided by ChatGPT
-	awk -i inplace -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>MinLat && a[1]<MaxLat) && (a[2]>MinLong && a[2]<MaxLong)) {print $0}}' "${WorkPath}data.csv"
+	awk -i inplace -v MinLat="$MinLat" -v MaxLat="$MaxLat" -v MinLong="$MinLong" -v MaxLong="$MaxLong" -F ';' '{split($10,a,","); if((a[1]>=MinLat && a[1]<=MaxLat) && (a[2]>=MinLong && a[2]<=MaxLong)) {print $0}}' "${WorkPath}data.csv"
 fi
 
 # Longitude/Latitude
@@ -454,8 +454,8 @@ fi
 
 
 # --------------------------------------- DATA FILTERING --------------------------------
-# Define function for sorting using cly-weather-sorting, with arguments for the source file, the output file and the reverse option.
-# This function is used for all the data filtering.
+# Function used for sorting with cly-weather-sorting, with arguments for the source file, the output file and the reverse option.
+# This function is used for by all the data filtering methods.
 function sort_data {
 	./cly-weather-sorting -f "$1" -o "$2" $3 $UsedSortArgument
 	if [[ $? -ne 0 ]]; then
@@ -466,6 +466,34 @@ function sort_data {
 	if [[ $DisableCleaning = false ]]; then
 		rm "$1"
 	fi
+}
+
+# Function used to reorganize the data as needed by t3 and p3 modes.
+function reorganize3 {
+	echo "Applying t3/p3 data organization..."
+
+	# Code provided by ChatGPT, modified by Jordan.
+	awk -F ";" '{
+		id = $1;
+		day = $2;
+		hour = $3;
+		temp = $4;
+		temperatures[id][day][hour]=temp;
+	}
+	END {
+		for (i in temperatures) {
+			for (d in temperatures[i]) {
+				printf("%s;%s", i, d);
+				for (h = 0; h <= 23; h++) {
+					printf(";%s", temperatures[i][d][sprintf("%02d:00:00+01:00", h)]);
+				}
+				printf("\n");
+			}
+		}
+	}' $1 > $2
+
+	# We sort the first 2 columns. cly-meteo-sorting cannot be used here, because the dynamic malloc seems to struggle with the long lines.
+	sort -t ";" -k1,1 -k2,2 $2 -o $2
 }
 
 for i in $UsedDataArguments; do
@@ -616,10 +644,10 @@ for i in $UsedDataArguments; do
 
 		# Code provided by ChatGPT, modified by Jordan.
 		awk -F ";" '{
-			sum[$1]+=$6;
+			sum[$1]+=$7;
 			count[$1]++;
-			if(min[$1]>$6 || !min[$1]) min[$1]=$6;
-			if(max[$1]<$6 || !max[$1]) max[$1]=$6;
+			if(min[$1]>$7 || !min[$1]) min[$1]=$7;
+			if(max[$1]<$7 || !max[$1]) max[$1]=$7;
 		} END {
 			for (i in sum) {
 				print i ";" min[i] ";" sum[i]/count[i] ";" max[i]
@@ -631,7 +659,7 @@ for i in $UsedDataArguments; do
 		gnuplot -persist -e "reset;set datafile separator \";\";
 			set title \"Pressure statistics by station\";
 			set xlabel \"Station ID\";
-			set ylabel \"Pressure (hPa)\";
+			set ylabel \"Pressure\";
 			set grid;
 			set key top left;
 			set style data linespoints;
@@ -675,7 +703,7 @@ for i in $UsedDataArguments; do
 
 		# Code provided by ChatGPT, modified by Jordan.
 		awk -F ';' '{ 
-			temp[$2] += $6; 
+			temp[$2] += $7; 
 			count[$2] += 1; 
 		} END { 
 			for (key in temp) { 
@@ -683,12 +711,15 @@ for i in $UsedDataArguments; do
 			} 
 		}' "${WorkPath}data.csv" > "${WorkPath}p2_filtered_data_unsorted.csv"
 		# -------------------------------------------
+		# Workaround for an unknown malloc(): invalid next size (unsorted) bug within cly-weather-sorting.
+		awk -i inplace -F';' '{printf("%s;%.3f\n", $1, $2)}' "${WorkPath}p2_filtered_data_unsorted.csv"
+
 		sort_data "${WorkPath}p2_filtered_data_unsorted.csv" "${WorkPath}p2_data.csv"
 
 		gnuplot -persist -e "reset;
 			set title 'Mean pressure over time';
 			set xlabel 'Time';
-			set ylabel 'Pressure (hPa)';
+			set ylabel 'Pressure';
 			set xdata time;
 			set timefmt '%Y-%m-%dT%H:%M:%S%z';
 			set datafile separator ';';
@@ -697,8 +728,10 @@ for i in $UsedDataArguments; do
 
 
 
-		# THIS IS TOO SLOW ! IMPLEMENT TAB METHOD IN THE C PROGRAM AND USE A SORTING ALGORITHM.
-		# Plus, this is untested.
+
+
+
+
 		"-t3")
 		echo "Filtering using t3..."
 		awk -F ";" '{print $2 ";" $1 ";" $11}' "${WorkPath}data.csv" > "${WorkPath}t3_filtered_data_unsorted.csv"
@@ -707,20 +740,64 @@ for i in $UsedDataArguments; do
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_filtered_data_sorted1.csv"
 		echo "Still going..."
 		sort_data "${WorkPath}t3_filtered_data_sorted1.csv" "${WorkPath}t3_data.csv"
-		echo "Soon done..."
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}t3_data.csv"
+
+		# The format required by the exercise is different from the format we're using for gnuplot.
+		# We need to reorganize the data, in order to use it with gnuplot.
+
+		echo "Preparing for gnuplot..."
+
+		# We separate the hours from the dates.
+		sed -i 's/T/;/g' "${WorkPath}t3_data.csv"
+
+		# We change the format
+		reorganize3 "${WorkPath}t3_data.csv" "${WorkPath}t3_gnuplot_data.csv"
+
+		# gnuplot
+		gnuplot -persist -e "
+			set datafile separator ';';
+        	set title 't3 Graph';
+        	set xdata time;
+        	set timefmt '%Y-%m-%d';
+        	set xtics format '%Y-%m-%d';
+        	set yrange [0:*];
+        	plot for [h=0:23] '${WorkPath}t3_gnuplot_data.csv' using 2:(column(3+h)):(column(3+h)) with linespoints palette pointsize 1 notitle"
 		;;
 
 		"-p3")
 		echo "Filtering using p3..."
-		awk -F ";" '{print $2 ";" $1 ";" $6}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
+		awk -F ";" '{print $2 ";" $1 ";" $7}' "${WorkPath}data.csv" > "${WorkPath}p3_filtered_data_unsorted.csv"
 		echo "Warning ! This may take a while..."
+
+		# Workaround for an unknown malloc(): invalid next size (unsorted) bug within cly-weather-sorting.
+		awk -i inplace -F';' '{printf("%s;%s;%.3f\n", $1, $2, $3)}' "${WorkPath}p3_filtered_data_unsorted.csv"
+
 		sort_data "${WorkPath}p3_filtered_data_unsorted.csv" "${WorkPath}p3_filtered_data_sorted1.csv"
 		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_filtered_data_sorted1.csv"
 		echo "Still going..."
 		sort_data "${WorkPath}p3_filtered_data_sorted1.csv" "${WorkPath}p3_data.csv"
-		echo "Soon done..."
-		awk -i inplace -F ";" '{print $2 ";" $1 ";" $3}' "${WorkPath}p3_data.csv"
+
+		# The format required by the exercise is different from the format we're using for gnuplot.
+		# We need to reorganize the data, in order to use it with gnuplot.
+
+		echo "Preparing for gnuplot..."
+
+		# We separate the hours from the dates.
+		sed -i 's/T/;/g' "${WorkPath}p3_data.csv"
+
+		# We change the format
+		reorganize3 "${WorkPath}p3_data.csv" "${WorkPath}p3_gnuplot_data.csv"
+
+		# gnuplot
+		gnuplot -persist -e "
+			set datafile separator ';';
+        	set title 'p3 Graph';
+        	set xdata time;
+        	set timefmt '%Y-%m-%d';
+        	set xtics format '%Y-%m-%d';
+        	set yrange [0:*];
+			set xlabel 'Day';
+			set ylabel 'Pressure';
+        	plot for [h=0:23] '${WorkPath}p3_gnuplot_data.csv' using 2:(column(3+h)):(column(3+h)) with linespoints palette pointsize 1 notitle"
 		;;
 
 		"*")

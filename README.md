@@ -41,6 +41,8 @@ Station ID;Date;Sea level pressure;Average wind direction 10 nm;Average wind spe
 ```
 In order to successfully run, CLY-Weather needs at least one data type argument. If all goes well, you should be awarded with as many graphs as data types entered as arguments : one graph per argument.
 
+**NOTE :** The graphs are *not* directly dumped as images. They use gnuplot's window to display. This allows for the user to preview the graph before saving it with additional settings and in the format that they prefer.
+
 ## Data Type options 
 ### Temperature : (-t1, -t2, -t3)
 	-t1 : Produces a graph of the minimum, average, and maximum temperature for each station.

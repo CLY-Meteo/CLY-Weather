@@ -6,10 +6,11 @@
 #include "cly-weather-headers.h"
 
 // ------------------------------- ABR Modification -------------------------------
-// Some optimisation could be done.
+// This function will insert a new node into an ABR tree pointer.
 pABRNode insertInABR(pABRNode tree, long Value, char * Data){
 	if(tree == NULL){
-		pABRNode NewNode = malloc(sizeof(ABRNode));
+		pABRNode NewNode = NULL;
+		NewNode = malloc(sizeof(ABRNode));
 		if (NewNode == NULL) {
 			printf("\nMemory allocation error.\n");
 			exit(4);
@@ -30,6 +31,7 @@ pABRNode insertInABR(pABRNode tree, long Value, char * Data){
 }
 
 // ------------------------------------- ABR Manipulation -------------------------------------
+// Used for debugging, this function will show the ABR tree's values used for sorting in prefix order.
 void showABRPrefix(pABRNode tree){
 	if(tree != NULL){
 		printf("%d ", tree->Value);
@@ -39,6 +41,9 @@ void showABRPrefix(pABRNode tree){
 		printf("| ");
 	}
 }
+
+// Used for debugging, this function will show the ABR tree's values used for sorting in infix order.
+// This is the order in which the data will be written in the output file.
 void showABRData(pABRNode tree){
 	if(tree != NULL){
 		showABRData(tree->leftNode);
@@ -47,6 +52,7 @@ void showABRData(pABRNode tree){
 	}
 }
 
+// This function will complete wipe the ABR tree. Unused.
 void wipeABR(pABRNode tree) {
 	if(tree != NULL) {
 		if(tree->Data != NULL){
@@ -63,14 +69,18 @@ void wipeABR(pABRNode tree) {
 	}
 }
 
+// This function will write the ABR tree's data in the output file.
+// The data will be written in infix order. This is similar to the printABRData function.
 void writeABRTreeDataToFile(pABRNode tree, FILE * outputFile, bool useReverse){
 	if(tree != NULL){
 		if(!useReverse){
 			writeABRTreeDataToFile(tree->leftNode, outputFile, useReverse);
-			//Workaround
+
+			//Workaround for an unknown bug where the last character of random strings is 1 instead of \0.
 			if(tree->Data[strlen(tree->Data)-1] == '1'){
 				tree->Data[strlen(tree->Data)-1] = '\0';
 			}
+
 			fprintf(outputFile, "%s", tree->Data);
 			writeABRTreeDataToFile(tree->rightNode, outputFile, useReverse);
 		} else {

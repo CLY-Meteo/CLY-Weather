@@ -129,8 +129,6 @@ int main(int argc, char *argv[]) {
 
 
 
-
-
 	
 	FILE * inputFile = fopen(inputFilePath, "r");
 	if (inputFile == NULL){
@@ -149,7 +147,12 @@ int main(int argc, char *argv[]) {
 	tabList * fileTab = NULL;
 
 	while ((getline(&line, &len, inputFile)) != -1) {
-		char * lineBackup = malloc(sizeof(char) * strlen(line));
+		char * lineBackup = NULL;
+		lineBackup = malloc(sizeof(char) * strlen(line));
+		if(lineBackup == NULL){
+			printf("Error: memory allocation failed.\n");
+			exit(4);
+		}
 		strcpy(lineBackup, line);
 		
 		//Extract the first number from the line
