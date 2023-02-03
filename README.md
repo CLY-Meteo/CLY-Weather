@@ -4,10 +4,10 @@
 
 # CLY-Weather *(CLI + CY-Météo)*
 
-![License](https://img.shields.io/github/license/CLY-Weather/CLY-Weather?color=orange)
-![Top language](https://img.shields.io/github/languages/top/CLY-Weather/CLY-Weather?color=grey)
-![Commit activity](https://img.shields.io/github/commit-activity/m/CLY-Weather/CLY-Weather?color=red)
-![Repo size](https://img.shields.io/github/repo-size/CLY-Weather/CLY-Weather)
+![License](https://img.shields.io/github/license/CLY-Meteo/CLY-Weather?color=orange)
+![Top language](https://img.shields.io/github/languages/top/CLY-Meteo/CLY-Weather?color=grey)
+![Commit activity](https://img.shields.io/github/commit-activity/m/CLY-Meteo/CLY-Weather?color=red)
+![Repo size](https://img.shields.io/github/repo-size/CLY-Meteo/CLY-Weather)
 
 CLY-Weather (CLI + CY-Météo) is a Bash script + C program that translates weather data into various graphs, using gnuplot.
 
